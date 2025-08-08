@@ -1,9 +1,0 @@
-# Nanoleaf Lines customizations
-light.lines_949b:
-  friendly_name: Nanoleaf Lines
-  icon: mdi:wall-sconce-flat-variant
-
-button.lines_949b_identify:
-  friendly_name: Nanoleaf Lines Identify
-  icon: mdi:ray-vertex
-

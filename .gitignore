@@ -1,4 +1,8 @@
-runtime/
+data/
 
 .env
+
+# Editor / OS files
+*.swp
+.DS_Store
 

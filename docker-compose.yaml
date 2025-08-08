@@ -1,60 +1,31 @@
-## Compose specification (no explicit version key needed)
-## Using :latest tags per user request (will pull newest on each docker compose pull).
-name: home-stack
+name: home
 
 services:
   homeassistant:
     image: ghcr.io/home-assistant/home-assistant:latest
     container_name: homeassistant
-    # Explicit port mapping instead of host networking
     ports:
       - "8123:8123"
-    privileged: true                 # helpful for USB discovery (USB radios)
+    privileged: true  # optional; needed for some hardware discovery
     environment:
-      - TZ=${TZ}
+      - TZ=America/Los_Angeles  # PST
     volumes:
-      # Mount the runtime directory (database, .storage, logs, etc.)
-      - ./runtime/homeassistant:/config
-      # Overlay version-controlled YAML files individually so edits in the UI
-      # (e.g. Automations editor) are written back to ./config/homeassistant/*.yaml
-      - ./config/homeassistant/configuration.yaml:/config/configuration.yaml
-      - ./config/homeassistant/automations.yaml:/config/automations.yaml
-      - ./config/homeassistant/scripts.yaml:/config/scripts.yaml
-      - ./config/homeassistant/scenes.yaml:/config/scenes.yaml
-      - ./config/homeassistant/customize.yaml:/config/customize.yaml
+      - ./data/homeassistant:/config  # entire HA config; manage via UI
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
     depends_on:
       - mosquitto
-    # If you use a USB radio, map it (adjust to your device path):
-    # devices:
-    #   - /dev/ttyUSB0:/dev/ttyUSB0
 
   mosquitto:
     image: eclipse-mosquitto:latest
     container_name: mosquitto
     ports:
       - "1883:1883"
-      - "9001:9001"                  # websockets (optional)
+      - "9001:9001"  # websockets (optional)
     volumes:
-      - ./config/mosquitto:/mosquitto/config:ro
-      - ./runtime/mosquitto:/mosquitto/data:rw
-      - ./runtime/mosquitto:/mosquitto/log:rw
+      - ./config/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./data/mosquitto/data:/mosquitto/data
+      - ./data/mosquitto/log:/mosquitto/log
     restart: unless-stopped
-
-  # Optional: Zigbee2MQTT (uncomment and set your adapter path)
-  # zigbee2mqtt:
-  #   image: koenkk/zigbee2mqtt:${Z2M_VERSION:-2.1.0}
-  #   container_name: zigbee2mqtt
-  #   depends_on:
-  #     - mosquitto
-  #   environment:
-  #     - TZ=${TZ}
-  #   volumes:
-  #     - z2m_data:/app/data
-  #   devices:
-  #     - /dev/ttyUSB0:/dev/ttyUSB0   # change to your adapter (e.g., /dev/ttyACM0)
-  #   restart: unless-stopped
-  #   network_mode: host              # makes discovery easier
 
 volumes: {}
