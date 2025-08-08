@@ -1,0 +1,14 @@
+############################################################
+# Script: Turn kitchen light off after 60 seconds (manual) #
+############################################################
+# Call script.kitchen_light_delayed_off to turn the kitchen light off after 60s.
+# Replace light.kitchen with the correct entity_id if needed.
+
+kitchen_light_delayed_off:
+  alias: Kitchen light delayed off (60s)
+  sequence:
+    - delay: '00:01:00'
+    - service: light.turn_off
+      target:
+        entity_id: light.kitchen
+  mode: restart

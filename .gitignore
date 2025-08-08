@@ -1,4 +1,13 @@
-data/
+# Ignore everything under data (runtime/state) by default
+data/**
+
+# Allow traversing directories so we can selectively unignore YAML
+!data/**/
+
+# Unignore all YAML/YML config & blueprints
+!data/**/*.yaml
+!data/**/*.yml
+
 
 .env
 

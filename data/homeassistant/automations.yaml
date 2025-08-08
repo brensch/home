@@ -1,0 +1,20 @@
+- id: kitchen_light_auto_off_60s
+  alias: Kitchen light auto off after 60s
+  description: Turn the kitchen light off automatically 60 seconds after it turns
+    on.
+  triggers:
+  - entity_id:
+    - light.kitchen
+    to: 'on'
+    for:
+      hours: 0
+      minutes: 1
+      seconds: 0
+    trigger: state
+  actions:
+  - target:
+      area_id: kitchen
+    action: light.turn_off
+    data:
+      transition: 2
+  mode: restart
