@@ -1,1 +1,72 @@
-[]
+- id: '1754640850013'
+  name: cool scene
+  entities:
+    button.lines_949b_identify:
+      device_class: identify
+      friendly_name: Lines 949B Identify
+      state: '2025-08-08T08:13:30.736324+00:00'
+    light.lines_949b:
+      min_color_temp_kelvin: 1200
+      max_color_temp_kelvin: 6500
+      min_mireds: 153
+      max_mireds: 833
+      effect_list:
+      - Beat Drop
+      - Christmas Lights
+      - Cotton Candy
+      - Cozy Blaze
+      - Fiesta
+      - Good Vibes
+      - Hip Hop
+      - Jalapeno Heat
+      - Kaleidoscope
+      - Mountain Air
+      - Mystic Night
+      - Neon Dreams
+      - Nightclub
+      - Northern Lights
+      - Pop Rocks
+      - Prism
+      - Radioactive
+      - Raspberry Lemonade
+      - Retro
+      - Sakura Blossom
+      - Spooky highlight
+      - Starry Sky
+      - Tuscany Sunset
+      - Waterfall
+      - soup
+      supported_color_modes:
+      - color_temp
+      - hs
+      effect: Tuscany Sunset
+      color_mode: hs
+      brightness: 68
+      color_temp_kelvin:
+      color_temp:
+      hs_color:
+      - 0
+      - 0
+      rgb_color:
+      - 255
+      - 255
+      - 255
+      xy_color:
+      - 0.323
+      - 0.329
+      friendly_name: Lines 949B
+      supported_features: 36
+      state: 'on'
+  icon: mdi:air-filter
+  metadata: {}
+
+- id: '1754640850014'
+  name: lines ambient
+  entities:
+    light.lines_949b:
+      state: 'on'
+      brightness: 180
+      effect: Northern Lights
+      friendly_name: Nanoleaf Lines
+  icon: mdi:wall-sconce-flat-variant
+  metadata: {}

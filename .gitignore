@@ -1,17 +1,4 @@
 runtime/
 
-# Secrets (env-only approach)
 .env
 
-# Mosquitto runtime
-mosquitto/data/
-mosquitto/log/
-
-# MariaDB persistent data
-mariadb/data/
-
-# General junk
-__pycache__/
-*.pyc
-*.swp
-.DS_Store

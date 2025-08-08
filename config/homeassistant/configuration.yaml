@@ -4,6 +4,10 @@ automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
 
+# Core Home Assistant settings & entity customizations
+homeassistant:
+  # Load per-entity customizations (friendly_name, icon, etc.)
+  customize: !include customize.yaml
+
 recorder:
-  db_url: mysql://ha:__DB_PASSWORD__@mariadb:3306/homeassistant?charset=utf8mb4
   purge_keep_days: 7

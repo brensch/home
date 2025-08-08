@@ -9,17 +9,22 @@ services:
     # Explicit port mapping instead of host networking
     ports:
       - "8123:8123"
-    entrypoint: ["/bin/bash", "/config-src/entrypoint.sh"]
     privileged: true                 # helpful for USB discovery (USB radios)
     environment:
       - TZ=${TZ}
     volumes:
-      - ./config/homeassistant:/config-src:ro
-      - ./runtime/homeassistant:/runtime/homeassistant:rw
+      # Mount the runtime directory (database, .storage, logs, etc.)
+      - ./runtime/homeassistant:/config
+      # Overlay version-controlled YAML files individually so edits in the UI
+      # (e.g. Automations editor) are written back to ./config/homeassistant/*.yaml
+      - ./config/homeassistant/configuration.yaml:/config/configuration.yaml
+      - ./config/homeassistant/automations.yaml:/config/automations.yaml
+      - ./config/homeassistant/scripts.yaml:/config/scripts.yaml
+      - ./config/homeassistant/scenes.yaml:/config/scenes.yaml
+      - ./config/homeassistant/customize.yaml:/config/customize.yaml
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
     depends_on:
-      - mariadb
       - mosquitto
     # If you use a USB radio, map it (adjust to your device path):
     # devices:
@@ -36,21 +41,6 @@ services:
       - ./runtime/mosquitto:/mosquitto/data:rw
       - ./runtime/mosquitto:/mosquitto/log:rw
     restart: unless-stopped
-
-  mariadb:
-    image: mariadb:latest
-    container_name: mariadb
-    environment:
-      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
-      - MYSQL_DATABASE=homeassistant
-      - MYSQL_USER=ha
-      - MYSQL_PASSWORD=${DB_PASSWORD}
-      - TZ=${TZ}
-    volumes:
-      - ./runtime/mariadb:/var/lib/mysql:rw
-    restart: unless-stopped
-    ports:
-      - "3306:3306"  # optional expose for maintenance/backups
 
   # Optional: Zigbee2MQTT (uncomment and set your adapter path)
   # zigbee2mqtt:
