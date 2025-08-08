@@ -1,0 +1,68 @@
+## Compose specification (no explicit version key needed)
+## Using :latest tags per user request (will pull newest on each docker compose pull).
+name: home-stack
+
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:latest
+    container_name: homeassistant
+    # Explicit port mapping instead of host networking
+    ports:
+      - "8123:8123"
+    privileged: true                 # helpful for USB discovery (USB radios)
+    environment:
+      - TZ=${TZ}
+      - MYSQL_URL=mysql://ha:${DB_PASSWORD}@127.0.0.1:3306/homeassistant?charset=utf8mb4
+      # ^ set recorder->db_url to this same value in configuration.yaml
+    volumes:
+      - ./homeassistant:/config
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
+    depends_on:
+      - mariadb
+      - mosquitto
+    # If you use a USB radio, map it (adjust to your device path):
+    # devices:
+    #   - /dev/ttyUSB0:/dev/ttyUSB0
+
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: mosquitto
+    ports:
+      - "1883:1883"
+      - "9001:9001"                  # websockets (optional)
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+    restart: unless-stopped
+
+  mariadb:
+    image: mariadb:latest
+    container_name: mariadb
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=homeassistant
+      - MYSQL_USER=ha
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+      - TZ=${TZ}
+    volumes:
+      - ./mariadb/data:/var/lib/mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"  # optional expose for maintenance/backups
+
+  # Optional: Zigbee2MQTT (uncomment and set your adapter path)
+  # zigbee2mqtt:
+  #   image: koenkk/zigbee2mqtt:${Z2M_VERSION:-2.1.0}
+  #   container_name: zigbee2mqtt
+  #   depends_on:
+  #     - mosquitto
+  #   environment:
+  #     - TZ=${TZ}
+  #   volumes:
+  #     - ./zigbee2mqtt/data:/app/data
+  #   devices:
+  #     - /dev/ttyUSB0:/dev/ttyUSB0   # change to your adapter (e.g., /dev/ttyACM0)
+  #   restart: unless-stopped
+  #   network_mode: host              # makes discovery easier

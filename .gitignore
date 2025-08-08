@@ -1,0 +1,23 @@
+# Home Assistant runtime artifacts (not for version control)
+homeassistant/home-assistant.log*
+homeassistant/home-assistant_v2.db*
+homeassistant/tts/
+homeassistant/deps/
+homeassistant/.storage/
+homeassistant/.cloud/
+# Secrets
+homeassistant/secrets.yaml
+.env
+
+# Mosquitto runtime
+mosquitto/data/
+mosquitto/log/
+
+# MariaDB persistent data
+mariadb/data/
+
+# General junk
+__pycache__/
+*.pyc
+*.swp
+.DS_Store
