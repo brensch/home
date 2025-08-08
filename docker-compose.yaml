@@ -6,7 +6,9 @@ services:
     container_name: homeassistant
     ports:
       - "8123:8123"
-    privileged: true  # optional; needed for some hardware discovery
+    # Running as host user for easier file permission management
+    user: "${UID}:${GID}"
+    # privileged removed; add back if you need USB / network discovery that fails without it
     environment:
       - TZ=America/Los_Angeles  # PST
     volumes:
@@ -22,6 +24,7 @@ services:
     ports:
       - "1883:1883"
       - "9001:9001"  # websockets (optional)
+    user: "${UID}:${GID}"
     volumes:
       - ./config/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - ./data/mosquitto/data:/mosquitto/data
