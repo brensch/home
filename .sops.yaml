@@ -1,0 +1,9 @@
+creation_rules:
+  - path_regex: configs/homeassistant/secrets.yaml$
+    encrypted_regex: '^(mysql_recorder_url)$'
+    age: PLACEHOLDER_AGE_RECIPIENT_KEY
+  - path_regex: \.env$
+    encrypted_regex: '^(DB_ROOT_PASSWORD|DB_PASSWORD)$'
+    age: PLACEHOLDER_AGE_RECIPIENT_KEY
+
+# Replace PLACEHOLDER_AGE_RECIPIENT_KEY with your age public key (from age-keygen output, line starting with age1)

@@ -9,13 +9,13 @@ services:
     # Explicit port mapping instead of host networking
     ports:
       - "8123:8123"
+    entrypoint: ["/bin/bash", "/config-src/entrypoint.sh"]
     privileged: true                 # helpful for USB discovery (USB radios)
     environment:
       - TZ=${TZ}
-      - MYSQL_URL=mysql://ha:${DB_PASSWORD}@127.0.0.1:3306/homeassistant?charset=utf8mb4
-      # ^ set recorder->db_url to this same value in configuration.yaml
     volumes:
-      - ./configs/homeassistant:/config:rw
+      - ./config/homeassistant:/config-src:ro
+      - ./runtime/homeassistant:/runtime/homeassistant:rw
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
     depends_on:
@@ -32,9 +32,9 @@ services:
       - "1883:1883"
       - "9001:9001"                  # websockets (optional)
     volumes:
-      - ./configs/mosquitto:/mosquitto/config:ro
-      - mosquitto_data:/mosquitto/data
-      - mosquitto_log:/mosquitto/log
+      - ./config/mosquitto:/mosquitto/config:ro
+      - ./runtime/mosquitto:/mosquitto/data:rw
+      - ./runtime/mosquitto:/mosquitto/log:rw
     restart: unless-stopped
 
   mariadb:
@@ -47,7 +47,7 @@ services:
       - MYSQL_PASSWORD=${DB_PASSWORD}
       - TZ=${TZ}
     volumes:
-      - mariadb_data:/var/lib/mysql
+      - ./runtime/mariadb:/var/lib/mysql:rw
     restart: unless-stopped
     ports:
       - "3306:3306"  # optional expose for maintenance/backups
@@ -67,8 +67,4 @@ services:
   #   restart: unless-stopped
   #   network_mode: host              # makes discovery easier
 
-volumes:
-  mosquitto_data:
-  mosquitto_log:
-  mariadb_data:
-  # z2m_data:
+volumes: {}
