@@ -103,3 +103,34 @@ If you want zero re‑pairing after DR, add a rule for `configs/homeassistant/.s
 
 ---
 Need help extending encryption to `.storage` or adding CI checks? Open an issue or ask.
+
+## Exposing Home Assistant over HTTPS (Caddy)
+
+This stack now includes an optional Caddy reverse proxy that terminates TLS (Let's Encrypt) and forwards to the internal Home Assistant container.
+
+Steps:
+1. Create a public DNS A (and AAAA if IPv6) record pointing `example.com` to your WAN IP.
+2. Edit `config/caddy/Caddyfile` and replace `example.com` with your domain.
+3. (Optional) Put an email in a global block for ACME if you want notifications:
+   ````
+   {
+     email you@example.com
+   }
+   ````
+4. Open/forward ports 80 and 443 from your router to this host (same IP that runs Docker).
+5. Start / restart the stack:
+   ```bash
+   docker compose up -d caddy
+   ```
+6. Watch logs to confirm cert issuance:
+   ```bash
+   docker logs -f caddy | grep -i "certificate obtained"
+   ```
+7. Access HA at: `https://example.com` (port 8123 no longer needed externally).
+
+Security notes:
+- The HA `http:` config now trusts Docker bridge subnets; tighten to the actual network CIDR if you customize networks.
+- Keep port 8123 un-forwarded on the router; only 80/443 should be exposed.
+- Consider adding IP filtering or GeoIP at Caddy if desired.
+
+Renewals are automatic; certificates are stored in the named volume `caddy_data`.

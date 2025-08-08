@@ -1,0 +1,33 @@
+# Replace example.com with your real domain (ensure DNS A/AAAA points to your WAN IP)
+# Caddy will obtain/renew Let's Encrypt certificates automatically.
+# If you want to use a wildcard or internal CA, adjust accordingly.
+
+snek2.ddns.net {
+	encode gzip
+
+	# Forward all traffic to Home Assistant container
+	reverse_proxy homeassistant:8123 {
+		# Preserve websocket + headers automatically; explicit options if needed
+		transport http {
+			compression off
+		}
+	}
+
+	# Optional: security/headers tweaks
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		Referrer-Policy no-referrer
+		X-Content-Type-Options nosniff
+		X-Frame-Options SAMEORIGIN
+		X-XSS-Protection "1; mode=block"
+	}
+
+	# Optional: allow local HTTP->HTTPS redirects
+	redir /.well-known/carddav /remote.php/dav 308
+	redir /.well-known/caldav /remote.php/dav 308
+}
+
+# (Optional) HTTP->HTTPS redirect if someone hits plain 80 with host
+http://snek2.ddns.net {
+	redir https://snek2.ddns.net{uri} 308
+}

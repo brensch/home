@@ -17,6 +17,7 @@ services:
     restart: unless-stopped
     depends_on:
       - mosquitto
+  # Caddy (reverse proxy) is optional and starts after HA
 
   mosquitto:
     image: eclipse-mosquitto:latest
@@ -31,4 +32,22 @@ services:
       - ./data/mosquitto/log:/mosquitto/log
     restart: unless-stopped
 
-volumes: {}
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - ACME_AGREE=true
+    volumes:
+      - ./config/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - homeassistant
+    restart: unless-stopped
+
+volumes:
+  caddy_data: {}
+  caddy_config: {}
