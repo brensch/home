@@ -15,7 +15,7 @@ services:
       - MYSQL_URL=mysql://ha:${DB_PASSWORD}@127.0.0.1:3306/homeassistant?charset=utf8mb4
       # ^ set recorder->db_url to this same value in configuration.yaml
     volumes:
-      - ./homeassistant:/config
+      - ./configs/homeassistant:/config:rw
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
     depends_on:
@@ -32,9 +32,9 @@ services:
       - "1883:1883"
       - "9001:9001"                  # websockets (optional)
     volumes:
-      - ./mosquitto/config:/mosquitto/config
-      - ./mosquitto/data:/mosquitto/data
-      - ./mosquitto/log:/mosquitto/log
+      - ./configs/mosquitto:/mosquitto/config:ro
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
     restart: unless-stopped
 
   mariadb:
@@ -47,7 +47,7 @@ services:
       - MYSQL_PASSWORD=${DB_PASSWORD}
       - TZ=${TZ}
     volumes:
-      - ./mariadb/data:/var/lib/mysql
+      - mariadb_data:/var/lib/mysql
     restart: unless-stopped
     ports:
       - "3306:3306"  # optional expose for maintenance/backups
@@ -61,8 +61,14 @@ services:
   #   environment:
   #     - TZ=${TZ}
   #   volumes:
-  #     - ./zigbee2mqtt/data:/app/data
+  #     - z2m_data:/app/data
   #   devices:
   #     - /dev/ttyUSB0:/dev/ttyUSB0   # change to your adapter (e.g., /dev/ttyACM0)
   #   restart: unless-stopped
   #   network_mode: host              # makes discovery easier
+
+volumes:
+  mosquitto_data:
+  mosquitto_log:
+  mariadb_data:
+  # z2m_data:

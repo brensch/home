@@ -1,0 +1,12 @@
+default_config:
+
+# Additional includes
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+# Recorder (MariaDB) - adjust/remove if not using external DB
+recorder:
+  db_url: mysql://ha:${DB_PASSWORD}@mariadb:3306/homeassistant?charset=utf8mb4
+  purge_keep_days: 7
+  commit_interval: 30
