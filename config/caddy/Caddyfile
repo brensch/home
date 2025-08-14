@@ -30,7 +30,7 @@ snek2.ddns.net {
 schniff.snek2.ddns.net {
 	encode gzip
 
-	reverse_proxy schniffer-bot:8080 {
+	reverse_proxy schniffer-bot:8069 {
 		transport http {
 			compression off
 		}
