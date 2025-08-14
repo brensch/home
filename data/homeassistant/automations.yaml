@@ -18,3 +18,127 @@
     data:
       transition: 2
   mode: restart
+- id: '1754652726253'
+  alias: Toggle kitchen
+  description: ''
+  triggers:
+  - device_id: cb12369100a00d6059b100f569a8f0b7
+    domain: hue
+    type: initial_press
+    subtype: 4
+    unique_id: 10b57596-97c0-46a4-a7da-edd0a9331c76
+    trigger: device
+  conditions: []
+  actions:
+  - action: light.toggle
+    metadata: {}
+    data:
+      transition: 1
+    target:
+      area_id: kitchen
+  mode: single
+- id: '1754677598257'
+  alias: 'Turn off lights when we leave '
+  description: 'When leave, and Brend/alyssa aren’t home, turn off lights. '
+  triggers:
+  - trigger: zone
+    entity_id: device_tracker.alyssas_iphone_12_fall_2020
+    zone: zone.home
+    event: leave
+  - trigger: zone
+    entity_id: device_tracker.brend_phone
+    zone: zone.home
+    event: leave
+  conditions:
+  - condition: and
+    conditions:
+    - condition: device
+      device_id: 51c8cd84d4445784458a1699cccc5fcf
+      domain: device_tracker
+      entity_id: d6d298eb6d9ec2e92d00d6cff3a3e01a
+      type: is_not_home
+    - condition: device
+      device_id: e60320af7226271d8a3213cc70eaa562
+      domain: device_tracker
+      entity_id: a0be8c34ed56057230de3dc68ec34251
+      type: is_not_home
+  actions:
+  - action: light.turn_off
+    metadata: {}
+    data: {}
+    target:
+      area_id:
+      - balcony
+      - bedroom
+      - closet
+      - kitchen
+      - living_room
+  mode: single
+- id: '1755055880057'
+  alias: 'Turn on lights when alyssa gets home '
+  description: 'When Brend/alyssa get home, turn on lights. '
+  triggers:
+  - trigger: zone
+    entity_id: device_tracker.alyssas_iphone_12_fall_2020
+    zone: zone.home
+    event: enter
+  - trigger: zone
+    entity_id: device_tracker.brend_phone
+    zone: zone.home
+    event: enter
+  conditions: []
+  actions:
+  - sequence:
+    - action: light.turn_on
+      metadata: {}
+      data:
+        color_temp_kelvin: 2518
+        brightness_step_pct: 85
+      target:
+        area_id:
+        - living_room
+        - kitchen
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 1
+        milliseconds: 0
+    - action: scene.turn_on
+      metadata: {}
+      data:
+        transition: 90
+      target:
+        entity_id: scene.nanoleaf_tuscany_sunset
+  mode: single
+- id: '1755145185715'
+  alias: 'Brend gets home, turn on lights. '
+  description: 'When Brend get home, turn on lights. '
+  triggers:
+  - trigger: zone
+    entity_id: device_tracker.brend_phone
+    zone: zone.home
+    event: enter
+  conditions: []
+  actions:
+  - sequence:
+    - action: light.turn_on
+      metadata: {}
+      data:
+        color_temp_kelvin: 2518
+        brightness_step_pct: 85
+      target:
+        area_id:
+        - living_room
+        - kitchen
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 1
+        milliseconds: 0
+    - action: scene.turn_on
+      metadata: {}
+      data:
+        transition: 90
+      target:
+        entity_id: scene.nanoleaf_soup
+  mode: single

@@ -46,6 +46,20 @@ services:
       - caddy_config:/config
     depends_on:
       - homeassistant
+      - your-service  # Add dependency on your new service
+    restart: unless-stopped
+
+  # New service for schniff.snek2.ddns.net
+  # Replace this with your actual service configuration
+  your-service:
+    image: nginx:alpine  # Replace with your desired image
+    container_name: your-service
+    # ports:  # No need to expose ports externally since we're using reverse proxy
+    #   - "8080:80"  # Only uncomment if you need direct access for testing
+    volumes:
+      - ./data/your-service:/usr/share/nginx/html:ro  # Replace with your volume mounts
+    environment:
+      - TZ=America/Los_Angeles
     restart: unless-stopped
 
 volumes:

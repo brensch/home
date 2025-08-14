@@ -1,0 +1,217 @@
+- id: '1755143322014'
+  name: 'NanoLeaf Tuscany sunset '
+  entities:
+    light.lines_desk:
+      min_color_temp_kelvin: 1200
+      max_color_temp_kelvin: 6500
+      min_mireds: 153
+      max_mireds: 833
+      effect_list:
+      - Beat Drop
+      - Christmas Lights
+      - Cotton Candy
+      - Cozy Blaze
+      - Fiesta
+      - Good Vibes
+      - Hip Hop
+      - Jalapeno Heat
+      - Kaleidoscope
+      - Mountain Air
+      - Mystic Night
+      - Neon Dreams
+      - Nightclub
+      - Northern Lights
+      - Pop Rocks
+      - Prism
+      - Radioactive
+      - Raspberry Lemonade
+      - Retro
+      - Sakura Blossom
+      - Spooky highlight
+      - Starry Sky
+      - Tuscany Sunset
+      - Waterfall
+      - soup
+      supported_color_modes:
+      - color_temp
+      - hs
+      effect: Tuscany Sunset
+      color_mode: hs
+      brightness: 254
+      color_temp_kelvin:
+      color_temp:
+      hs_color:
+      - 0
+      - 0
+      rgb_color:
+      - 255
+      - 255
+      - 255
+      xy_color:
+      - 0.323
+      - 0.329
+      friendly_name: Lines Desk
+      supported_features: 36
+      state: 'on'
+    light.lines_kitchen:
+      min_color_temp_kelvin: 1200
+      max_color_temp_kelvin: 6500
+      min_mireds: 153
+      max_mireds: 833
+      effect_list:
+      - Beat Drop
+      - Christmas Lights
+      - Cotton Candy
+      - Cozy Blaze
+      - Fiesta
+      - Good Vibes
+      - Hip Hop
+      - Jalapeno Heat
+      - Kaleidoscope
+      - Mountain Air
+      - Mystic Night
+      - Neon Dreams
+      - Nightclub
+      - Northern Lights
+      - Pop Rocks
+      - Prism
+      - Radioactive
+      - Raspberry Lemonade
+      - Retro
+      - Sakura Blossom
+      - Spooky highlight
+      - Starry Sky
+      - Tuscany Sunset
+      - Waterfall
+      supported_color_modes:
+      - color_temp
+      - hs
+      effect: Tuscany Sunset
+      color_mode: hs
+      brightness: 254
+      color_temp_kelvin:
+      color_temp:
+      hs_color:
+      - 0
+      - 0
+      rgb_color:
+      - 255
+      - 255
+      - 255
+      xy_color:
+      - 0.323
+      - 0.329
+      friendly_name: Lines Kitchen
+      supported_features: 36
+      state: 'on'
+  icon: mdi:alarm-light
+  metadata: {}
+- id: '1755145369431'
+  name: 'NanoLeaf Soup '
+  entities:
+    light.lines_desk:
+      min_color_temp_kelvin: 1200
+      max_color_temp_kelvin: 6500
+      min_mireds: 153
+      max_mireds: 833
+      effect_list:
+      - Beat Drop
+      - Christmas Lights
+      - Cotton Candy
+      - Cozy Blaze
+      - Fiesta
+      - Good Vibes
+      - Hip Hop
+      - Jalapeno Heat
+      - Kaleidoscope
+      - Mountain Air
+      - Mystic Night
+      - Neon Dreams
+      - Nightclub
+      - Northern Lights
+      - Pop Rocks
+      - Prism
+      - Radioactive
+      - Raspberry Lemonade
+      - Retro
+      - Sakura Blossom
+      - Spooky highlight
+      - Starry Sky
+      - Tuscany Sunset
+      - Waterfall
+      - soup
+      supported_color_modes:
+      - color_temp
+      - hs
+      effect: soup
+      color_mode: hs
+      brightness: 254
+      color_temp_kelvin:
+      color_temp:
+      hs_color:
+      - 0
+      - 0
+      rgb_color:
+      - 255
+      - 255
+      - 255
+      xy_color:
+      - 0.323
+      - 0.329
+      friendly_name: Lines Desk
+      supported_features: 36
+      state: 'on'
+    light.lines_kitchen:
+      min_color_temp_kelvin: 1200
+      max_color_temp_kelvin: 6500
+      min_mireds: 153
+      max_mireds: 833
+      effect_list:
+      - Beat Drop
+      - Christmas Lights
+      - Cotton Candy
+      - Cozy Blaze
+      - Fiesta
+      - Good Vibes
+      - Hip Hop
+      - Jalapeno Heat
+      - Kaleidoscope
+      - Mountain Air
+      - Mystic Night
+      - Neon Dreams
+      - Nightclub
+      - Northern Lights
+      - Pop Rocks
+      - Prism
+      - Radioactive
+      - Raspberry Lemonade
+      - Retro
+      - Sakura Blossom
+      - Spooky highlight
+      - Starry Sky
+      - Tuscany Sunset
+      - Waterfall
+      - soup
+      supported_color_modes:
+      - color_temp
+      - hs
+      effect: soup
+      color_mode: hs
+      brightness: 254
+      color_temp_kelvin:
+      color_temp:
+      hs_color:
+      - 0
+      - 0
+      rgb_color:
+      - 255
+      - 255
+      - 255
+      xy_color:
+      - 0.323
+      - 0.329
+      friendly_name: Lines Kitchen
+      supported_features: 36
+      state: 'on'
+  icon: mdi:alarm-light
+  metadata: {}
