@@ -46,6 +46,25 @@ schniff.snek2.ddns.net {
 	}
 }
 
+ppp.snek2.ddns.net {
+	encode gzip
+
+	reverse_proxy ppp:8040 {
+		transport http {
+			compression off
+		}
+	}
+
+	# Optional: security/headers tweaks
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		Referrer-Policy no-referrer
+		X-Content-Type-Options nosniff
+		X-Frame-Options SAMEORIGIN
+		X-XSS-Protection "1; mode=block"
+	}
+}
+
 # (Optional) HTTP->HTTPS redirect if someone hits plain 80 with host
 http://snek2.ddns.net {
 	redir https://snek2.ddns.net{uri} 308
@@ -54,4 +73,9 @@ http://snek2.ddns.net {
 # HTTP->HTTPS redirect for schniff subdomain
 http://schniff.snek2.ddns.net {
 	redir https://schniff.snek2.ddns.net{uri} 308
+}
+
+# HTTP->HTTPS redirect for ppp subdomain
+http://ppp.snek2.ddns.net {
+	redir https://ppp.snek2.ddns.net{uri} 308
 }

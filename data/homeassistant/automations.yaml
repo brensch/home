@@ -1,42 +1,3 @@
-- id: kitchen_light_auto_off_60s
-  alias: Kitchen light auto off after 60s
-  description: Turn the kitchen light off automatically 60 seconds after it turns
-    on.
-  triggers:
-  - entity_id:
-    - light.kitchen
-    to: 'on'
-    for:
-      hours: 0
-      minutes: 1
-      seconds: 0
-    trigger: state
-  actions:
-  - target:
-      area_id: kitchen
-    action: light.turn_off
-    data:
-      transition: 2
-  mode: restart
-- id: '1754652726253'
-  alias: Toggle kitchen
-  description: ''
-  triggers:
-  - device_id: cb12369100a00d6059b100f569a8f0b7
-    domain: hue
-    type: initial_press
-    subtype: 4
-    unique_id: 10b57596-97c0-46a4-a7da-edd0a9331c76
-    trigger: device
-  conditions: []
-  actions:
-  - action: light.toggle
-    metadata: {}
-    data:
-      transition: 1
-    target:
-      area_id: kitchen
-  mode: single
 - id: '1754677598257'
   alias: 'Turn off lights when we leave '
   description: 'When leave, and Brend/alyssa aren’t home, turn off lights. '
@@ -141,4 +102,123 @@
         transition: 90
       target:
         entity_id: scene.nanoleaf_soup
+  mode: single
+- id: '1755759727395'
+  alias: Kitchen toggle
+  description: ''
+  triggers:
+  - device_id: cb12369100a00d6059b100f569a8f0b7
+    domain: hue
+    type: initial_press
+    subtype: 1
+    unique_id: 64ef2e0b-d2a0-4a12-a611-5ff5bb076544
+    trigger: device
+  conditions: []
+  actions:
+  - action: light.toggle
+    metadata: {}
+    data:
+      color_temp_kelvin: 2335
+      brightness_pct: 100
+    target:
+      area_id: kitchen
+  mode: single
+- id: '1755761198542'
+  alias: Increase higher brightness
+  description: ''
+  triggers:
+  - device_id: cb12369100a00d6059b100f569a8f0b7
+    domain: hue
+    type: repeat
+    subtype: 2
+    unique_id: 14613278-a45d-4390-8cdb-8e0ba09bfdb6
+    trigger: device
+  conditions: []
+  actions:
+  - device_id: 8c3e4bf779f721870ba5f018c203a240
+    domain: light
+    entity_id: 8315a94e9278f647e40dea37f725ce4a
+    type: brightness_increase
+  - device_id: 8e677d1a1afe8ace4608db4ac950bf01
+    domain: light
+    entity_id: d60292b86da479ae26fa6bf9e12e2ccc
+    type: brightness_increase
+  mode: single
+- id: '1755761337646'
+  alias: Kitchen decrease brightness
+  description: ''
+  triggers:
+  - device_id: cb12369100a00d6059b100f569a8f0b7
+    domain: hue
+    type: repeat
+    subtype: 3
+    unique_id: 0688b2d6-df3f-4ab4-8fc2-8b571b5b351c
+    trigger: device
+  conditions: []
+  actions:
+  - device_id: 8c3e4bf779f721870ba5f018c203a240
+    domain: light
+    entity_id: 8315a94e9278f647e40dea37f725ce4a
+    type: brightness_decrease
+  - device_id: 8e677d1a1afe8ace4608db4ac950bf01
+    domain: light
+    entity_id: d60292b86da479ae26fa6bf9e12e2ccc
+    type: brightness_decrease
+  mode: single
+- id: '1755761528874'
+  alias: Kitchen hue button
+  description: ''
+  triggers:
+  - device_id: cb12369100a00d6059b100f569a8f0b7
+    domain: hue
+    type: initial_press
+    subtype: 4
+    unique_id: 10b57596-97c0-46a4-a7da-edd0a9331c76
+    trigger: device
+  conditions: []
+  actions:
+  - action: notify.mobile_app_schlixel
+    metadata: {}
+    data:
+      message: Love
+      title: Hi
+  - action: notify.mobile_app_alyssas_iphone_12_fall_2020
+    metadata: {}
+    data:
+      message: Love!
+      title: Love button pressed
+  mode: single
+- id: '1755762394301'
+  alias: Closet motion on
+  description: ''
+  triggers:
+  - type: motion
+    device_id: f774ae3b8b0050770a392fdd7293ab88
+    entity_id: af0cbcb2a6b56b41d94709b2c4c43611
+    domain: binary_sensor
+    trigger: device
+  conditions: []
+  actions:
+  - action: light.turn_on
+    metadata: {}
+    data: {}
+    target:
+      area_id: closet
+  mode: single
+- id: '1755762460777'
+  alias: Closet motion off
+  description: ''
+  triggers:
+  - type: no_motion
+    device_id: f774ae3b8b0050770a392fdd7293ab88
+    entity_id: af0cbcb2a6b56b41d94709b2c4c43611
+    domain: binary_sensor
+    trigger: device
+  conditions: []
+  actions:
+  - action: light.turn_off
+    metadata: {}
+    data: {}
+    target:
+      area_id: closet
   mode: single
