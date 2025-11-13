@@ -47,6 +47,8 @@ services:
     depends_on:
       - homeassistant
     restart: unless-stopped
+    networks:
+      - home_default
 
   noip:
     image: ghcr.io/noipcom/noip-duc:latest
@@ -58,6 +60,28 @@ services:
     network_mode: host
     restart: unless-stopped
 
+  esphome:
+    image: esphome/esphome:latest
+    container_name: esphome
+    volumes:
+      - ./data/esphome:/config
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - TZ=America/Los_Angeles
+      - PLATFORMIO_CORE_DIR=/config/.esphome/platformio
+    ports:
+      - "6052:6052"  # ESPHome dashboard
+      - "6123:6123"  # OTA updates
+    restart: unless-stopped
+    networks:
+      - home_default
+    user: "${UID}:${GID}"
+
 volumes:
   caddy_data: {}
   caddy_config: {}
+
+networks:
+  home_default:
+    external: true
+

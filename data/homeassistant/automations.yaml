@@ -214,6 +214,10 @@
     entity_id: af0cbcb2a6b56b41d94709b2c4c43611
     domain: binary_sensor
     trigger: device
+    for:
+      hours: 0
+      minutes: 2
+      seconds: 0
   conditions: []
   actions:
   - action: light.turn_off
