@@ -40,6 +40,8 @@ services:
       - "443:443"
     environment:
       - ACME_AGREE=true
+      - ESPHOME_USERNAME=${ESPHOME_USERNAME}
+      - ESPHOME_PASSWORD=${ESPHOME_PASSWORD}
     volumes:
       - ./config/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
