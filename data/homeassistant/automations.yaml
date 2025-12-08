@@ -226,3 +226,97 @@
     target:
       area_id: closet
   mode: single
+- id: '1764755248007'
+  alias: Living Room Toggle
+  description: ''
+  triggers:
+  - device_id: fe0ec55270474fd529eb64e9ec84b10a
+    domain: hue
+    type: initial_press
+    subtype: 1
+    unique_id: 13c37815-1b34-421f-9fd1-c1cdbfbd8202
+    metadata: {}
+    trigger: device
+  conditions: []
+  actions:
+  - if:
+    - condition: or
+      conditions:
+      - condition: device
+        type: is_on
+        device_id: 01c339e14e397f46b22544907cf4544c
+        entity_id: 6467492de86213ab1bd61cff4f8502ac
+        domain: light
+      - condition: device
+        type: is_on
+        device_id: 022b475f7bc8ce31ce68c701933bb007
+        entity_id: 1a4d79650ff95ad8c30c88343c20bad4
+        domain: light
+      - condition: device
+        type: is_on
+        device_id: daa6ca7da5ce673f4561fdd4be8a7284
+        entity_id: 6d35afd1de21a43968093d01f6ed7123
+        domain: light
+    then:
+    - action: light.turn_off
+      metadata: {}
+      data: {}
+      target:
+        area_id: living_room
+    else:
+    - action: light.turn_on
+      metadata: {}
+      data: {}
+      target:
+        area_id: living_room
+  mode: single
+- id: '1764756979999'
+  alias: Living Room Brightness Increase
+  description: ''
+  triggers:
+  - device_id: fe0ec55270474fd529eb64e9ec84b10a
+    domain: hue
+    type: repeat
+    subtype: 2
+    unique_id: 41832acc-c2d0-4e59-bc2a-9db32077605a
+    trigger: device
+  conditions: []
+  actions:
+  - device_id: 01c339e14e397f46b22544907cf4544c
+    domain: light
+    entity_id: 6467492de86213ab1bd61cff4f8502ac
+    type: brightness_increase
+  - device_id: daa6ca7da5ce673f4561fdd4be8a7284
+    domain: light
+    entity_id: 6d35afd1de21a43968093d01f6ed7123
+    type: brightness_increase
+  - device_id: 022b475f7bc8ce31ce68c701933bb007
+    domain: light
+    entity_id: 1a4d79650ff95ad8c30c88343c20bad4
+    type: brightness_increase
+  mode: single
+- id: '1764757214653'
+  alias: 'Living Room Brightness Decrease '
+  description: ''
+  triggers:
+  - device_id: fe0ec55270474fd529eb64e9ec84b10a
+    domain: hue
+    type: repeat
+    subtype: 3
+    unique_id: 23ba07c9-aa80-4f6d-8854-30a002bfb383
+    trigger: device
+  conditions: []
+  actions:
+  - device_id: 01c339e14e397f46b22544907cf4544c
+    domain: light
+    entity_id: 6467492de86213ab1bd61cff4f8502ac
+    type: brightness_decrease
+  - device_id: 022b475f7bc8ce31ce68c701933bb007
+    domain: light
+    entity_id: 1a4d79650ff95ad8c30c88343c20bad4
+    type: brightness_decrease
+  - device_id: daa6ca7da5ce673f4561fdd4be8a7284
+    domain: light
+    entity_id: 6d35afd1de21a43968093d01f6ed7123
+    type: brightness_decrease
+  mode: single

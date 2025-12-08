@@ -10,6 +10,9 @@ automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
 
+# Disable TTS to prevent Google Cloud errors
+tts:
+
 # HTTP / Reverse Proxy Settings
 http:
   use_x_forwarded_for: true
@@ -19,3 +22,12 @@ http:
   ip_ban_enabled: true
   login_attempts_threshold: 5
 
+google_assistant:
+  project_id: passenger-princess-protector
+  service_account: !include SERVICE_ACCOUNT.json
+  report_state: true # This allows syncing the state with Google Home
+  expose_by_default: true # Temporarily expose all entities to test
+  exposed_domains:
+    - switch
+    - light
+    - camera

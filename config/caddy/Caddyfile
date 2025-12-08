@@ -88,6 +88,25 @@ esphome.snek2.ddns.net {
 	}
 }
 
+pal.snek2.ddns.net {
+	encode gzip
+
+	reverse_proxy palworld:8212 {
+		transport http {
+			compression off
+		}
+	}
+
+	# Optional: security/headers tweaks
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		Referrer-Policy no-referrer
+		X-Content-Type-Options nosniff
+		X-Frame-Options SAMEORIGIN
+		X-XSS-Protection "1; mode=block"
+	}
+}
+
 # (Optional) HTTP->HTTPS redirect if someone hits plain 80 with host
 http://snek2.ddns.net {
 	redir https://snek2.ddns.net{uri} 308
@@ -106,4 +125,9 @@ http://ppp.snek2.ddns.net {
 # HTTP->HTTPS redirect for esphome subdomain
 http://esphome.snek2.ddns.net {
 	redir https://esphome.snek2.ddns.net{uri} 308
+}
+
+# HTTP->HTTPS redirect for pal subdomain
+http://pal.snek2.ddns.net {
+	redir https://pal.snek2.ddns.net{uri} 308
 }
