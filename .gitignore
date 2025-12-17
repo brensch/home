@@ -17,3 +17,6 @@ data/**
 
 noip.conf
 
+# Python virtual environment
+venv/
+

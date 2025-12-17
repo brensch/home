@@ -2,6 +2,12 @@
 # Caddy will obtain/renew Let's Encrypt certificates automatically.
 # If you want to use a wildcard or internal CA, adjust accordingly.
 
+christmas.snek2.ddns.net {
+	root * /srv/christmas-party
+	file_server
+	encode gzip
+}
+
 snek2.ddns.net {
 	encode gzip
 

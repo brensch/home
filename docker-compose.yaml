@@ -44,6 +44,7 @@ services:
       - ESPHOME_PASSWORD=${ESPHOME_PASSWORD}
     volumes:
       - ./config/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./data/christmas-party:/srv/christmas-party
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
@@ -98,7 +99,11 @@ services:
       - COMMUNITY=true
       - SERVER_NAME=Nog Island
       - SERVER_PASSWORD=squirt
+      - ENABLE_PLAYER_LOGGING=true
+      - AUTO_PAUSE_ENABLED=true
       - ADMIN_PASSWORD=${PALWORLD_ADMIN_PASSWORD}
+      - DIFFICULTY=Hard
+      - PAL_EGG_DEFAULT_HATCHING_TIME=0.5
       - PUBLIC_IP=pal.snek2.ddns.net
       - PUBLIC_PORT=8211
     volumes:
