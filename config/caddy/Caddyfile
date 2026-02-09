@@ -137,3 +137,27 @@ http://esphome.snek2.ddns.net {
 http://pal.snek2.ddns.net {
 	redir https://pal.snek2.ddns.net{uri} 308
 }
+
+lift.snek2.ddns.net {
+	encode gzip
+
+	reverse_proxy proxy:80 {
+		transport http {
+			compression off
+		}
+	}
+
+	# Optional: security/headers tweaks
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		Referrer-Policy no-referrer
+		X-Content-Type-Options nosniff
+		X-Frame-Options SAMEORIGIN
+		X-XSS-Protection "1; mode=block"
+	}
+}
+
+# HTTP->HTTPS redirect for lift subdomain
+http://lift.snek2.ddns.net {
+	redir https://lift.snek2.ddns.net{uri} 308
+}

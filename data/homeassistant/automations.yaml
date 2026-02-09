@@ -320,3 +320,21 @@
     entity_id: 6d35afd1de21a43968093d01f6ed7123
     type: brightness_decrease
   mode: single
+- id: '1767417376577'
+  alias: Bedroom toggle
+  description: ''
+  triggers:
+  - device_id: 666d36917aaefd6d10bb585225b461c0
+    domain: hue
+    type: initial_press
+    subtype: 1
+    unique_id: 54fb137f-85c5-4ce3-a9cc-fce5b202cf06
+    trigger: device
+  conditions: []
+  actions:
+  - action: light.toggle
+    metadata: {}
+    data: {}
+    target:
+      area_id: bedroom
+  mode: single

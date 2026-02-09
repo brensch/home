@@ -52,6 +52,11 @@ services:
     restart: unless-stopped
     networks:
       - home_default
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
 
   noip:
     image: ghcr.io/noipcom/noip-duc:latest
