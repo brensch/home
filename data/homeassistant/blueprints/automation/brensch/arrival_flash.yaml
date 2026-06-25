@@ -1,0 +1,83 @@
+blueprint:
+  name: Arrival flash
+  description: >
+    When a person arrives home, snapshot the chosen lights, blink them a
+    colour a few times, then restore them to exactly what they were before.
+  domain: automation
+  input:
+    arrival_tracker:
+      name: Person device tracker
+      description: The device_tracker whose arrival triggers the flash.
+      selector:
+        entity:
+          filter:
+            domain: device_tracker
+    flash_lights:
+      name: Lights to flash
+      description: Light(s) or group(s) to blink and then restore.
+      selector:
+        entity:
+          multiple: true
+          filter:
+            domain: light
+    flash_color:
+      name: Flash colour
+      description: RGB colour to blink.
+      selector:
+        color_rgb: {}
+    flash_count:
+      name: Number of blinks
+      default: 3
+      selector:
+        number:
+          min: 1
+          max: 10
+
+mode: restart
+
+variables:
+  lights: !input flash_lights
+  color: !input flash_color
+  count: !input flash_count
+  restore_scene: "scene.arrival_restore_{{ this.entity_id.split('.')[1] }}"
+
+triggers:
+  - trigger: zone
+    entity_id: !input arrival_tracker
+    zone: zone.home
+    event: enter
+
+conditions: []
+
+actions:
+  # 1. Snapshot current state so we can put it back exactly as it was.
+  - action: scene.create
+    data:
+      scene_id: "arrival_restore_{{ this.entity_id.split('.')[1] }}"
+      snapshot_entities: !input flash_lights
+  # 2. Blink the colour.
+  - repeat:
+      count: "{{ count }}"
+      sequence:
+        - action: light.turn_on
+          target:
+            entity_id: !input flash_lights
+          data:
+            rgb_color: !input flash_color
+            brightness_pct: 100
+            transition: 0
+        - delay:
+            milliseconds: 400
+        - action: light.turn_off
+          target:
+            entity_id: !input flash_lights
+          data:
+            transition: 0
+        - delay:
+            milliseconds: 300
+  # 3. Restore whatever they were before the flash.
+  - action: scene.turn_on
+    target:
+      entity_id: "{{ restore_scene }}"
+    data:
+      transition: 1

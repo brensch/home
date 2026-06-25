@@ -36,73 +36,31 @@
       - living_room
   mode: single
 - id: '1755055880057'
-  alias: 'Turn on lights when alyssa gets home '
-  description: 'When Brend/alyssa get home, turn on lights. '
-  triggers:
-  - trigger: zone
-    entity_id: device_tracker.alyssas_iphone_12_fall_2020
-    zone: zone.home
-    event: enter
-  - trigger: zone
-    entity_id: device_tracker.brend_phone
-    zone: zone.home
-    event: enter
-  conditions: []
-  actions:
-  - sequence:
-    - action: light.turn_on
-      metadata: {}
-      data:
-        color_temp_kelvin: 2518
-        brightness_step_pct: 85
-      target:
-        area_id:
-        - living_room
-        - kitchen
-    - delay:
-        hours: 0
-        minutes: 0
-        seconds: 1
-        milliseconds: 0
-    - action: scene.turn_on
-      metadata: {}
-      data:
-        transition: 90
-      target:
-        entity_id: scene.nanoleaf_tuscany_sunset
-  mode: single
+  alias: Alyssa arrival flash (green)
+  use_blueprint:
+    path: brensch/arrival_flash.yaml
+    input:
+      arrival_tracker: device_tracker.alyssas_iphone_12_fall_2020
+      flash_color:
+      - 0
+      - 255
+      - 0
+      flash_lights:
+      - light.kitchen_all
+      - light.living_room_all
 - id: '1755145185715'
-  alias: 'Brend gets home, turn on lights. '
-  description: 'When Brend get home, turn on lights. '
-  triggers:
-  - trigger: zone
-    entity_id: device_tracker.brend_phone
-    zone: zone.home
-    event: enter
-  conditions: []
-  actions:
-  - sequence:
-    - action: light.turn_on
-      metadata: {}
-      data:
-        color_temp_kelvin: 2518
-        brightness_step_pct: 85
-      target:
-        area_id:
-        - living_room
-        - kitchen
-    - delay:
-        hours: 0
-        minutes: 0
-        seconds: 1
-        milliseconds: 0
-    - action: scene.turn_on
-      metadata: {}
-      data:
-        transition: 90
-      target:
-        entity_id: scene.nanoleaf_soup
-  mode: single
+  alias: Brend arrival flash (red)
+  use_blueprint:
+    path: brensch/arrival_flash.yaml
+    input:
+      arrival_tracker: device_tracker.brend_phone
+      flash_color:
+      - 255
+      - 0
+      - 0
+      flash_lights:
+      - light.kitchen_all
+      - light.living_room_all
 - id: '1755761528874'
   alias: Kitchen hue button
   description: ''
