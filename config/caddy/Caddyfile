@@ -84,42 +84,6 @@ esphome.{$DOMAIN} {
 	}
 }
 
-pal.{$DOMAIN} {
-	encode gzip
-
-	reverse_proxy palworld:8212 {
-		transport http {
-			compression off
-		}
-	}
-
-	header {
-		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-		Referrer-Policy no-referrer
-		X-Content-Type-Options nosniff
-		X-Frame-Options SAMEORIGIN
-		X-XSS-Protection "1; mode=block"
-	}
-}
-
-lift.{$DOMAIN} {
-	encode gzip
-
-	reverse_proxy proxy:80 {
-		transport http {
-			compression off
-		}
-	}
-
-	header {
-		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-		Referrer-Policy no-referrer
-		X-Content-Type-Options nosniff
-		X-Frame-Options SAMEORIGIN
-		X-XSS-Protection "1; mode=block"
-	}
-}
-
 herdcore.{$DOMAIN} {
 	encode gzip
 
