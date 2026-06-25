@@ -142,7 +142,7 @@
       entity_id: light.kitchen_all
     data:
       brightness_step_pct: 15
-      transition: 0.4
+      transition: 0.9
   mode: single
 - id: '1755761337646'
   alias: Kitchen decrease brightness
@@ -167,7 +167,7 @@
       entity_id: light.kitchen_all
     data:
       brightness_step_pct: -15
-      transition: 0.4
+      transition: 0.9
   mode: single
 - id: '1755761528874'
   alias: Kitchen hue button
@@ -270,7 +270,7 @@
       entity_id: light.living_room_all
     data:
       brightness_step_pct: 15
-      transition: 0.4
+      transition: 0.9
   mode: single
 - id: '1764757214653'
   alias: 'Living Room Brightness Decrease '
@@ -295,7 +295,7 @@
       entity_id: light.living_room_all
     data:
       brightness_step_pct: -15
-      transition: 0.4
+      transition: 0.9
   mode: single
 - id: '1767417376577'
   alias: Bedroom toggle
@@ -312,4 +312,60 @@
   - action: light.toggle
     target:
       entity_id: light.bedroom
+  mode: single
+- id: '1900000000001'
+  alias: Kitchen dim stop
+  description: Halt smooth dimming the instant the up/down button is released.
+  triggers:
+  - device_id: cb12369100a00d6059b100f569a8f0b7
+    domain: hue
+    type: long_release
+    subtype: 2
+    unique_id: 14613278-a45d-4390-8cdb-8e0ba09bfdb6
+    trigger: device
+  - device_id: cb12369100a00d6059b100f569a8f0b7
+    domain: hue
+    type: long_release
+    subtype: 3
+    unique_id: 0688b2d6-df3f-4ab4-8fc2-8b571b5b351c
+    trigger: device
+  conditions:
+  - condition: state
+    entity_id: light.kitchen_all
+    state: 'on'
+  actions:
+  - action: light.turn_on
+    target:
+      entity_id: light.kitchen_all
+    data:
+      brightness: '{{ state_attr(''light.kitchen_all'', ''brightness'') | int(128) }}'
+      transition: 0
+  mode: single
+- id: '1900000000002'
+  alias: Living Room dim stop
+  description: Halt smooth dimming the instant the up/down button is released.
+  triggers:
+  - device_id: fe0ec55270474fd529eb64e9ec84b10a
+    domain: hue
+    type: long_release
+    subtype: 2
+    unique_id: 41832acc-c2d0-4e59-bc2a-9db32077605a
+    trigger: device
+  - device_id: fe0ec55270474fd529eb64e9ec84b10a
+    domain: hue
+    type: long_release
+    subtype: 3
+    unique_id: 23ba07c9-aa80-4f6d-8854-30a002bfb383
+    trigger: device
+  conditions:
+  - condition: state
+    entity_id: light.living_room_all
+    state: 'on'
+  actions:
+  - action: light.turn_on
+    target:
+      entity_id: light.living_room_all
+    data:
+      brightness: '{{ state_attr(''light.living_room_all'', ''brightness'') | int(128) }}'
+      transition: 0
   mode: single
