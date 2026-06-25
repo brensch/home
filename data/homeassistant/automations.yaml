@@ -142,7 +142,7 @@
       entity_id: light.kitchen_all
     data:
       brightness_step_pct: 15
-      transition: 1
+      transition: 0.4
   mode: single
 - id: '1755761337646'
   alias: Kitchen decrease brightness
@@ -167,7 +167,7 @@
       entity_id: light.kitchen_all
     data:
       brightness_step_pct: -15
-      transition: 1
+      transition: 0.4
   mode: single
 - id: '1755761528874'
   alias: Kitchen hue button
@@ -270,7 +270,7 @@
       entity_id: light.living_room_all
     data:
       brightness_step_pct: 15
-      transition: 1
+      transition: 0.4
   mode: single
 - id: '1764757214653'
   alias: 'Living Room Brightness Decrease '
@@ -295,7 +295,7 @@
       entity_id: light.living_room_all
     data:
       brightness_step_pct: -15
-      transition: 1
+      transition: 0.4
   mode: single
 - id: '1767417376577'
   alias: Bedroom toggle
