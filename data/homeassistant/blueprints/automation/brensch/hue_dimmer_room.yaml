@@ -1,0 +1,109 @@
+blueprint:
+  name: Hue dimmer room control
+  description: >
+    One Hue dimmer switch controls a room's lights. Button 1 toggles the
+    light group (smooth all-on / all-off, matching the dashboard tile);
+    the up/down buttons step brightness on hold or short press. Uses the
+    Hue button event entities so it works for any dimmer.
+  domain: automation
+  input:
+    button_toggle:
+      name: Toggle button (top / on)
+      description: The button-1 event entity of the dimmer.
+      selector:
+        entity:
+          filter:
+            domain: event
+            integration: hue
+    button_up:
+      name: Brighten button (up)
+      description: The button-2 event entity of the dimmer.
+      selector:
+        entity:
+          filter:
+            domain: event
+            integration: hue
+    button_down:
+      name: Dim button (down)
+      description: The button-3 event entity of the dimmer.
+      selector:
+        entity:
+          filter:
+            domain: event
+            integration: hue
+    room_lights:
+      name: Room lights
+      description: The light (or light group) this dimmer controls.
+      selector:
+        target:
+          entity:
+            domain: light
+    step_pct:
+      name: Brightness step
+      description: Percent brightness change per up/down event.
+      default: 15
+      selector:
+        number:
+          min: 1
+          max: 50
+          unit_of_measurement: '%'
+
+mode: queued
+max: 10
+max_exceeded: silent
+
+variables:
+  step: !input step_pct
+
+triggers:
+  - trigger: state
+    entity_id: !input button_toggle
+    id: toggle
+    not_to:
+      - unavailable
+      - unknown
+  - trigger: state
+    entity_id: !input button_up
+    id: up
+    not_to:
+      - unavailable
+      - unknown
+  - trigger: state
+    entity_id: !input button_down
+    id: down
+    not_to:
+      - unavailable
+      - unknown
+
+conditions: []
+
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: toggle
+          - condition: template
+            value_template: "{{ trigger.to_state.attributes.event_type == 'initial_press' }}"
+        sequence:
+          - action: light.toggle
+            target: !input room_lights
+      - conditions:
+          - condition: trigger
+            id: up
+          - condition: template
+            value_template: "{{ trigger.to_state.attributes.event_type in ['repeat', 'short_release'] }}"
+        sequence:
+          - action: light.turn_on
+            target: !input room_lights
+            data:
+              brightness_step_pct: "{{ step | int }}"
+      - conditions:
+          - condition: trigger
+            id: down
+          - condition: template
+            value_template: "{{ trigger.to_state.attributes.event_type in ['repeat', 'short_release'] }}"
+        sequence:
+          - action: light.turn_on
+            target: !input room_lights
+            data:
+              brightness_step_pct: "{{ step | int * -1 }}"
