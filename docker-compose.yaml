@@ -35,11 +35,14 @@ services:
   caddy:
     image: caddy:2-alpine
     container_name: caddy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "80:80"
       - "443:443"
     environment:
       - ACME_AGREE=true
+      - DOMAIN=${DOMAIN}
       - ESPHOME_USERNAME=${ESPHOME_USERNAME}
       - ESPHOME_PASSWORD=${ESPHOME_PASSWORD}
     volumes:
@@ -58,13 +61,14 @@ services:
         max-size: "10m"
         max-file: "5"
 
-  noip:
-    image: ghcr.io/noipcom/noip-duc:latest
-    container_name: noip-updater
+  cloudflare-ddns:
+    image: oznu/cloudflare-ddns:latest
+    container_name: cloudflare-ddns
     environment:
-      - NOIP_USERNAME=${NOIP_USERNAME}
-      - NOIP_PASSWORD=${NOIP_PASSWORD}
-      - NOIP_HOSTNAMES=${NOIP_DOMAINS}
+      - API_KEY=${CLOUDFLARE_API_TOKEN}
+      - ZONE=${DOMAIN}
+      - SUBDOMAIN=@
+      - PROXIED=false
     network_mode: host
     restart: unless-stopped
 
@@ -109,7 +113,7 @@ services:
       - ADMIN_PASSWORD=${PALWORLD_ADMIN_PASSWORD}
       - DIFFICULTY=Hard
       - PAL_EGG_DEFAULT_HATCHING_TIME=0.5
-      - PUBLIC_IP=pal.snek2.ddns.net
+      - PUBLIC_IP=pal.${DOMAIN}
       - PUBLIC_PORT=8211
     volumes:
       - ./data/palworld:/palworld

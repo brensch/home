@@ -1,25 +1,19 @@
-# Replace example.com with your real domain (ensure DNS A/AAAA points to your WAN IP)
-# Caddy will obtain/renew Let's Encrypt certificates automatically.
-# If you want to use a wildcard or internal CA, adjust accordingly.
-
-christmas.snek2.ddns.net {
+christmas.{$DOMAIN} {
 	root * /srv/christmas-party
 	file_server
 	encode gzip
 }
 
-snek2.ddns.net {
+{$DOMAIN} {
 	encode gzip
 
 	# Forward all traffic to Home Assistant container
 	reverse_proxy homeassistant:8123 {
-		# Preserve websocket + headers automatically; explicit options if needed
 		transport http {
 			compression off
 		}
 	}
 
-	# Optional: security/headers tweaks
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 		Referrer-Policy no-referrer
@@ -28,12 +22,11 @@ snek2.ddns.net {
 		X-XSS-Protection "1; mode=block"
 	}
 
-	# Optional: allow local HTTP->HTTPS redirects
 	redir /.well-known/carddav /remote.php/dav 308
 	redir /.well-known/caldav /remote.php/dav 308
 }
 
-schniff.snek2.ddns.net {
+schniff.{$DOMAIN} {
 	encode gzip
 
 	reverse_proxy schniffer-bot:8069 {
@@ -42,7 +35,6 @@ schniff.snek2.ddns.net {
 		}
 	}
 
-	# Optional: security/headers tweaks
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 		Referrer-Policy no-referrer
@@ -52,7 +44,7 @@ schniff.snek2.ddns.net {
 	}
 }
 
-ppp.snek2.ddns.net {
+ppp.{$DOMAIN} {
 	encode gzip
 
 	reverse_proxy ppp:8040 {
@@ -61,7 +53,6 @@ ppp.snek2.ddns.net {
 		}
 	}
 
-	# Optional: security/headers tweaks
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 		Referrer-Policy no-referrer
@@ -71,7 +62,7 @@ ppp.snek2.ddns.net {
 	}
 }
 
-esphome.snek2.ddns.net {
+esphome.{$DOMAIN} {
 	encode gzip
 
 	basic_auth / {
@@ -84,7 +75,6 @@ esphome.snek2.ddns.net {
 		}
 	}
 
-	# Optional: security/headers tweaks
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 		Referrer-Policy no-referrer
@@ -94,7 +84,7 @@ esphome.snek2.ddns.net {
 	}
 }
 
-pal.snek2.ddns.net {
+pal.{$DOMAIN} {
 	encode gzip
 
 	reverse_proxy palworld:8212 {
@@ -103,7 +93,6 @@ pal.snek2.ddns.net {
 		}
 	}
 
-	# Optional: security/headers tweaks
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 		Referrer-Policy no-referrer
@@ -113,32 +102,7 @@ pal.snek2.ddns.net {
 	}
 }
 
-# (Optional) HTTP->HTTPS redirect if someone hits plain 80 with host
-http://snek2.ddns.net {
-	redir https://snek2.ddns.net{uri} 308
-}
-
-# HTTP->HTTPS redirect for schniff subdomain
-http://schniff.snek2.ddns.net {
-	redir https://schniff.snek2.ddns.net{uri} 308
-}
-
-# HTTP->HTTPS redirect for ppp subdomain
-http://ppp.snek2.ddns.net {
-	redir https://ppp.snek2.ddns.net{uri} 308
-}
-
-# HTTP->HTTPS redirect for esphome subdomain
-http://esphome.snek2.ddns.net {
-	redir https://esphome.snek2.ddns.net{uri} 308
-}
-
-# HTTP->HTTPS redirect for pal subdomain
-http://pal.snek2.ddns.net {
-	redir https://pal.snek2.ddns.net{uri} 308
-}
-
-lift.snek2.ddns.net {
+lift.{$DOMAIN} {
 	encode gzip
 
 	reverse_proxy proxy:80 {
@@ -147,7 +111,6 @@ lift.snek2.ddns.net {
 		}
 	}
 
-	# Optional: security/headers tweaks
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 		Referrer-Policy no-referrer
@@ -157,7 +120,20 @@ lift.snek2.ddns.net {
 	}
 }
 
-# HTTP->HTTPS redirect for lift subdomain
-http://lift.snek2.ddns.net {
-	redir https://lift.snek2.ddns.net{uri} 308
+herdcore.{$DOMAIN} {
+	encode gzip
+
+	reverse_proxy host.docker.internal:8090 {
+		transport http {
+			compression off
+		}
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		Referrer-Policy no-referrer
+		X-Content-Type-Options nosniff
+		X-Frame-Options SAMEORIGIN
+		X-XSS-Protection "1; mode=block"
+	}
 }
