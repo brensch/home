@@ -116,12 +116,8 @@
   conditions: []
   actions:
   - action: light.toggle
-    metadata: {}
-    data:
-      color_temp_kelvin: 2335
-      brightness_pct: 100
     target:
-      area_id: kitchen
+      entity_id: light.kitchen_all
   mode: single
 - id: '1755761198542'
   alias: Increase higher brightness
@@ -135,14 +131,11 @@
     trigger: device
   conditions: []
   actions:
-  - device_id: 8c3e4bf779f721870ba5f018c203a240
-    domain: light
-    entity_id: 8315a94e9278f647e40dea37f725ce4a
-    type: brightness_increase
-  - device_id: 8e677d1a1afe8ace4608db4ac950bf01
-    domain: light
-    entity_id: d60292b86da479ae26fa6bf9e12e2ccc
-    type: brightness_increase
+  - action: light.turn_on
+    target:
+      entity_id: light.kitchen_all
+    data:
+      brightness_step_pct: 15
   mode: single
 - id: '1755761337646'
   alias: Kitchen decrease brightness
@@ -156,14 +149,11 @@
     trigger: device
   conditions: []
   actions:
-  - device_id: 8c3e4bf779f721870ba5f018c203a240
-    domain: light
-    entity_id: 8315a94e9278f647e40dea37f725ce4a
-    type: brightness_decrease
-  - device_id: 8e677d1a1afe8ace4608db4ac950bf01
-    domain: light
-    entity_id: d60292b86da479ae26fa6bf9e12e2ccc
-    type: brightness_decrease
+  - action: light.turn_on
+    target:
+      entity_id: light.kitchen_all
+    data:
+      brightness_step_pct: -15
   mode: single
 - id: '1755761528874'
   alias: Kitchen hue button
@@ -239,36 +229,9 @@
     trigger: device
   conditions: []
   actions:
-  - if:
-    - condition: or
-      conditions:
-      - condition: device
-        type: is_on
-        device_id: 01c339e14e397f46b22544907cf4544c
-        entity_id: 6467492de86213ab1bd61cff4f8502ac
-        domain: light
-      - condition: device
-        type: is_on
-        device_id: 022b475f7bc8ce31ce68c701933bb007
-        entity_id: 1a4d79650ff95ad8c30c88343c20bad4
-        domain: light
-      - condition: device
-        type: is_on
-        device_id: daa6ca7da5ce673f4561fdd4be8a7284
-        entity_id: 6d35afd1de21a43968093d01f6ed7123
-        domain: light
-    then:
-    - action: light.turn_off
-      metadata: {}
-      data: {}
-      target:
-        area_id: living_room
-    else:
-    - action: light.turn_on
-      metadata: {}
-      data: {}
-      target:
-        area_id: living_room
+  - action: light.toggle
+    target:
+      entity_id: light.living_room_all
   mode: single
 - id: '1764756979999'
   alias: Living Room Brightness Increase
@@ -282,18 +245,11 @@
     trigger: device
   conditions: []
   actions:
-  - device_id: 01c339e14e397f46b22544907cf4544c
-    domain: light
-    entity_id: 6467492de86213ab1bd61cff4f8502ac
-    type: brightness_increase
-  - device_id: daa6ca7da5ce673f4561fdd4be8a7284
-    domain: light
-    entity_id: 6d35afd1de21a43968093d01f6ed7123
-    type: brightness_increase
-  - device_id: 022b475f7bc8ce31ce68c701933bb007
-    domain: light
-    entity_id: 1a4d79650ff95ad8c30c88343c20bad4
-    type: brightness_increase
+  - action: light.turn_on
+    target:
+      entity_id: light.living_room_all
+    data:
+      brightness_step_pct: 15
   mode: single
 - id: '1764757214653'
   alias: 'Living Room Brightness Decrease '
@@ -307,18 +263,11 @@
     trigger: device
   conditions: []
   actions:
-  - device_id: 01c339e14e397f46b22544907cf4544c
-    domain: light
-    entity_id: 6467492de86213ab1bd61cff4f8502ac
-    type: brightness_decrease
-  - device_id: 022b475f7bc8ce31ce68c701933bb007
-    domain: light
-    entity_id: 1a4d79650ff95ad8c30c88343c20bad4
-    type: brightness_decrease
-  - device_id: daa6ca7da5ce673f4561fdd4be8a7284
-    domain: light
-    entity_id: 6d35afd1de21a43968093d01f6ed7123
-    type: brightness_decrease
+  - action: light.turn_on
+    target:
+      entity_id: light.living_room_all
+    data:
+      brightness_step_pct: -15
   mode: single
 - id: '1767417376577'
   alias: Bedroom toggle
@@ -333,8 +282,6 @@
   conditions: []
   actions:
   - action: light.toggle
-    metadata: {}
-    data: {}
     target:
-      area_id: bedroom
+      entity_id: light.bedroom
   mode: single
