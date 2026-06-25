@@ -46,6 +46,7 @@ light:
     entities:
       - light.kitchen
       - light.lines_kitchen
+      - light.brightboy1
   - platform: group
     name: Living Room All
     unique_id: living_room_all_lights
