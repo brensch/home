@@ -55,6 +55,8 @@ services:
     volumes:
       - ./config/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./data/christmas-party:/srv/christmas-party
+      # Built Hugo blog (brensch.com root) from the separate `blog` repo.
+      - /home/brensch/blog/public:/srv/www:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:

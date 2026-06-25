@@ -1,3 +1,20 @@
+{$DOMAIN} {
+	root * /srv/www
+	file_server
+	encode gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		Referrer-Policy no-referrer
+		X-Content-Type-Options nosniff
+	}
+}
+
+# Redirect www to the bare apex
+www.{$DOMAIN} {
+	redir https://{$DOMAIN}{uri} permanent
+}
+
 christmas.{$DOMAIN} {
 	root * /srv/christmas-party
 	file_server
