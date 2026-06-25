@@ -17,7 +17,7 @@ tts:
 http:
   use_x_forwarded_for: true
   trusted_proxies:
-    - 172.19.0.0/16  # docker network used by caddy/homeassistant
+    - 172.18.0.0/16  # docker home_default network
     - 127.0.0.1
   ip_ban_enabled: true
   login_attempts_threshold: 5
@@ -31,3 +31,26 @@ google_assistant:
     - switch
     - light
     - camera
+homeassistant:
+  external_url: https://hass.brensch.com
+  internal_url: http://192.168.1.37:8123
+
+# Combined room light groups: Hue room + Nanoleaf/WLED, so one tile
+# controls every light in the room (not just the Hue bulbs). Defined in
+# YAML (tracked in git) so they survive restarts/migrations — previously
+# these were orphaned entity-registry entries with no backing definition.
+light:
+  - platform: group
+    name: Kitchen All
+    unique_id: kitchen_all_lights
+    entities:
+      - light.kitchen
+      - light.lines_kitchen
+  - platform: group
+    name: Living Room All
+    unique_id: living_room_all_lights
+    entities:
+      - light.living_room
+      - light.lines_desk
+      - light.tree
+      - light.garland
