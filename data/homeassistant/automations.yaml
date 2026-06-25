@@ -125,50 +125,70 @@
   triggers:
   - device_id: cb12369100a00d6059b100f569a8f0b7
     domain: hue
-    type: repeat
-    subtype: 2
-    unique_id: 14613278-a45d-4390-8cdb-8e0ba09bfdb6
-    trigger: device
-  - device_id: cb12369100a00d6059b100f569a8f0b7
-    domain: hue
-    type: short_release
+    type: initial_press
     subtype: 2
     unique_id: 14613278-a45d-4390-8cdb-8e0ba09bfdb6
     trigger: device
   conditions: []
+  mode: restart
   actions:
-  - action: light.turn_on
+  - action: input_boolean.turn_on
     target:
-      entity_id: light.kitchen_all
-    data:
-      brightness_step_pct: 15
-      transition: 0.9
-  mode: single
+      entity_id: input_boolean.kitchen_dimming
+  - repeat:
+      while:
+      - condition: state
+        entity_id: input_boolean.kitchen_dimming
+        state: 'on'
+      - condition: state
+        entity_id: light.kitchen_all
+        state: 'on'
+      - condition: template
+        value_template: '{{ repeat.index < 40 }}'
+      sequence:
+      - action: light.turn_on
+        target:
+          entity_id: light.kitchen_all
+        data:
+          brightness_step_pct: 4
+          transition: 0.3
+      - delay:
+          milliseconds: 250
 - id: '1755761337646'
   alias: Kitchen decrease brightness
   description: ''
   triggers:
   - device_id: cb12369100a00d6059b100f569a8f0b7
     domain: hue
-    type: repeat
-    subtype: 3
-    unique_id: 0688b2d6-df3f-4ab4-8fc2-8b571b5b351c
-    trigger: device
-  - device_id: cb12369100a00d6059b100f569a8f0b7
-    domain: hue
-    type: short_release
+    type: initial_press
     subtype: 3
     unique_id: 0688b2d6-df3f-4ab4-8fc2-8b571b5b351c
     trigger: device
   conditions: []
+  mode: restart
   actions:
-  - action: light.turn_on
+  - action: input_boolean.turn_on
     target:
-      entity_id: light.kitchen_all
-    data:
-      brightness_step_pct: -15
-      transition: 0.9
-  mode: single
+      entity_id: input_boolean.kitchen_dimming
+  - repeat:
+      while:
+      - condition: state
+        entity_id: input_boolean.kitchen_dimming
+        state: 'on'
+      - condition: state
+        entity_id: light.kitchen_all
+        state: 'on'
+      - condition: template
+        value_template: '{{ repeat.index < 40 }}'
+      sequence:
+      - action: light.turn_on
+        target:
+          entity_id: light.kitchen_all
+        data:
+          brightness_step_pct: -4
+          transition: 0.3
+      - delay:
+          milliseconds: 250
 - id: '1755761528874'
   alias: Kitchen hue button
   description: ''
@@ -253,50 +273,70 @@
   triggers:
   - device_id: fe0ec55270474fd529eb64e9ec84b10a
     domain: hue
-    type: repeat
-    subtype: 2
-    unique_id: 41832acc-c2d0-4e59-bc2a-9db32077605a
-    trigger: device
-  - device_id: fe0ec55270474fd529eb64e9ec84b10a
-    domain: hue
-    type: short_release
+    type: initial_press
     subtype: 2
     unique_id: 41832acc-c2d0-4e59-bc2a-9db32077605a
     trigger: device
   conditions: []
+  mode: restart
   actions:
-  - action: light.turn_on
+  - action: input_boolean.turn_on
     target:
-      entity_id: light.living_room_all
-    data:
-      brightness_step_pct: 15
-      transition: 0.9
-  mode: single
+      entity_id: input_boolean.living_room_dimming
+  - repeat:
+      while:
+      - condition: state
+        entity_id: input_boolean.living_room_dimming
+        state: 'on'
+      - condition: state
+        entity_id: light.living_room_all
+        state: 'on'
+      - condition: template
+        value_template: '{{ repeat.index < 40 }}'
+      sequence:
+      - action: light.turn_on
+        target:
+          entity_id: light.living_room_all
+        data:
+          brightness_step_pct: 4
+          transition: 0.3
+      - delay:
+          milliseconds: 250
 - id: '1764757214653'
   alias: 'Living Room Brightness Decrease '
   description: ''
   triggers:
   - device_id: fe0ec55270474fd529eb64e9ec84b10a
     domain: hue
-    type: repeat
-    subtype: 3
-    unique_id: 23ba07c9-aa80-4f6d-8854-30a002bfb383
-    trigger: device
-  - device_id: fe0ec55270474fd529eb64e9ec84b10a
-    domain: hue
-    type: short_release
+    type: initial_press
     subtype: 3
     unique_id: 23ba07c9-aa80-4f6d-8854-30a002bfb383
     trigger: device
   conditions: []
+  mode: restart
   actions:
-  - action: light.turn_on
+  - action: input_boolean.turn_on
     target:
-      entity_id: light.living_room_all
-    data:
-      brightness_step_pct: -15
-      transition: 0.9
-  mode: single
+      entity_id: input_boolean.living_room_dimming
+  - repeat:
+      while:
+      - condition: state
+        entity_id: input_boolean.living_room_dimming
+        state: 'on'
+      - condition: state
+        entity_id: light.living_room_all
+        state: 'on'
+      - condition: template
+        value_template: '{{ repeat.index < 40 }}'
+      sequence:
+      - action: light.turn_on
+        target:
+          entity_id: light.living_room_all
+        data:
+          brightness_step_pct: -4
+          transition: 0.3
+      - delay:
+          milliseconds: 250
 - id: '1767417376577'
   alias: Bedroom toggle
   description: ''
@@ -315,8 +355,14 @@
   mode: single
 - id: '1900000000001'
   alias: Kitchen dim stop
-  description: Halt smooth dimming the instant the up/down button is released.
+  description: Stop the dim loop the instant the up/down button is released.
   triggers:
+  - device_id: cb12369100a00d6059b100f569a8f0b7
+    domain: hue
+    type: short_release
+    subtype: 2
+    unique_id: 14613278-a45d-4390-8cdb-8e0ba09bfdb6
+    trigger: device
   - device_id: cb12369100a00d6059b100f569a8f0b7
     domain: hue
     type: long_release
@@ -325,26 +371,32 @@
     trigger: device
   - device_id: cb12369100a00d6059b100f569a8f0b7
     domain: hue
+    type: short_release
+    subtype: 3
+    unique_id: 0688b2d6-df3f-4ab4-8fc2-8b571b5b351c
+    trigger: device
+  - device_id: cb12369100a00d6059b100f569a8f0b7
+    domain: hue
     type: long_release
     subtype: 3
     unique_id: 0688b2d6-df3f-4ab4-8fc2-8b571b5b351c
     trigger: device
-  conditions:
-  - condition: state
-    entity_id: light.kitchen_all
-    state: 'on'
+  conditions: []
   actions:
-  - action: light.turn_on
+  - action: input_boolean.turn_off
     target:
-      entity_id: light.kitchen_all
-    data:
-      brightness: '{{ state_attr(''light.kitchen_all'', ''brightness'') | int(128) }}'
-      transition: 0
+      entity_id: input_boolean.kitchen_dimming
   mode: single
 - id: '1900000000002'
   alias: Living Room dim stop
-  description: Halt smooth dimming the instant the up/down button is released.
+  description: Stop the dim loop the instant the up/down button is released.
   triggers:
+  - device_id: fe0ec55270474fd529eb64e9ec84b10a
+    domain: hue
+    type: short_release
+    subtype: 2
+    unique_id: 41832acc-c2d0-4e59-bc2a-9db32077605a
+    trigger: device
   - device_id: fe0ec55270474fd529eb64e9ec84b10a
     domain: hue
     type: long_release
@@ -353,19 +405,19 @@
     trigger: device
   - device_id: fe0ec55270474fd529eb64e9ec84b10a
     domain: hue
+    type: short_release
+    subtype: 3
+    unique_id: 23ba07c9-aa80-4f6d-8854-30a002bfb383
+    trigger: device
+  - device_id: fe0ec55270474fd529eb64e9ec84b10a
+    domain: hue
     type: long_release
     subtype: 3
     unique_id: 23ba07c9-aa80-4f6d-8854-30a002bfb383
     trigger: device
-  conditions:
-  - condition: state
-    entity_id: light.living_room_all
-    state: 'on'
+  conditions: []
   actions:
-  - action: light.turn_on
+  - action: input_boolean.turn_off
     target:
-      entity_id: light.living_room_all
-    data:
-      brightness: '{{ state_attr(''light.living_room_all'', ''brightness'') | int(128) }}'
-      transition: 0
+      entity_id: input_boolean.living_room_dimming
   mode: single

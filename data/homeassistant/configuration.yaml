@@ -35,6 +35,15 @@ homeassistant:
   external_url: https://hass.brensch.com
   internal_url: http://192.168.1.37:8123
 
+# Track whether a dimmer's up/down button is currently held, so the dim
+# automations can run a smooth micro-step loop and stop the instant the
+# button is released.
+input_boolean:
+  kitchen_dimming:
+    name: Kitchen dimming
+  living_room_dimming:
+    name: Living room dimming
+
 # Combined room light groups: Hue room + Nanoleaf/WLED, so one tile
 # controls every light in the room (not just the Hue bulbs). Defined in
 # YAML (tracked in git) so they survive restarts/migrations — previously
