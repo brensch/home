@@ -35,6 +35,12 @@ homeassistant:
   external_url: https://hass.brensch.com
   internal_url: http://192.168.1.37:8123
 
+# Mutex so simultaneous arrivals flash one-at-a-time, and each snapshots the
+# real prior light state rather than the other person's flash colour.
+input_boolean:
+  arrival_flash_lock:
+    name: Arrival flash lock
+
 # Combined room light groups: Hue room + Nanoleaf/WLED, so one tile
 # controls every light in the room (not just the Hue bulbs). Defined in
 # YAML (tracked in git) so they survive restarts/migrations — previously

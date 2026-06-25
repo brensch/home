@@ -32,6 +32,16 @@ blueprint:
         number:
           min: 1
           max: 10
+    flash_lock:
+      name: Arrival flash lock
+      description: >
+        A shared input_boolean used as a mutex. Give every arrival-flash
+        automation the SAME helper so simultaneous arrivals run one-at-a-time
+        and each snapshots the true prior state.
+      selector:
+        entity:
+          filter:
+            domain: input_boolean
 
 mode: restart
 
@@ -39,6 +49,7 @@ variables:
   lights: !input flash_lights
   color: !input flash_color
   count: !input flash_count
+  lock_entity: !input flash_lock
   restore_scene: "scene.arrival_restore_{{ this.entity_id.split('.')[1] }}"
 
 triggers:
@@ -50,6 +61,15 @@ triggers:
 conditions: []
 
 actions:
+  # 0. Serialize: wait for any in-progress arrival flash to fully finish
+  #    (including its restore), then claim the lock. Self-heals after 30s
+  #    if a previous run left the lock stuck.
+  - wait_template: "{{ is_state(lock_entity, 'off') }}"
+    timeout: "00:00:30"
+    continue_on_timeout: true
+  - action: input_boolean.turn_on
+    target:
+      entity_id: !input flash_lock
   # 1. Snapshot current state so we can put it back exactly as it was.
   - action: scene.create
     data:
@@ -81,3 +101,7 @@ actions:
       entity_id: "{{ restore_scene }}"
     data:
       transition: 1
+  # 4. Release the lock for the next arrival.
+  - action: input_boolean.turn_off
+    target:
+      entity_id: !input flash_lock

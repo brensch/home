@@ -48,6 +48,7 @@
       flash_lights:
       - light.kitchen_all
       - light.living_room_all
+      flash_lock: input_boolean.arrival_flash_lock
 - id: '1755145185715'
   alias: Brend arrival flash (red)
   use_blueprint:
@@ -61,6 +62,7 @@
       flash_lights:
       - light.kitchen_all
       - light.living_room_all
+      flash_lock: input_boolean.arrival_flash_lock
 - id: '1755761528874'
   alias: Kitchen hue button
   description: ''
