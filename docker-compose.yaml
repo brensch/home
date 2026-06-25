@@ -4,6 +4,9 @@ services:
   homeassistant:
     image: ghcr.io/home-assistant/home-assistant:latest
     container_name: homeassistant
+    # Reach the host-networked matter-server at host.docker.internal:5580
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "8123:8123"
     # Running as host user for easier file permission management
@@ -123,6 +126,21 @@ services:
       - ./data/palworld:/palworld
     networks:
       - home_default
+
+  # Matter Server: this is a HA Container install (no add-on store), so the
+  # Matter integration needs an external Matter server to talk to. Host
+  # networking is required — Matter relies on IPv6, mDNS and Thread/Wi-Fi
+  # commissioning. HA connects to it at ws://host.docker.internal:5580/ws.
+  matter-server:
+    image: ghcr.io/home-assistant-libs/python-matter-server:stable
+    container_name: matter-server
+    restart: unless-stopped
+    network_mode: host
+    security_opt:
+      - apparmor=unconfined
+    volumes:
+      - ./data/matter-server:/data
+      - /run/dbus:/run/dbus:ro
 
 volumes:
   caddy_data: {}
