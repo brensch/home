@@ -17,6 +17,8 @@ services:
     restart: unless-stopped
     depends_on:
       - mosquitto
+    networks:
+      - home_default
   # Caddy (reverse proxy) is optional and starts after HA
 
   mosquitto:
@@ -31,6 +33,8 @@ services:
       - ./data/mosquitto/data:/mosquitto/data
       - ./data/mosquitto/log:/mosquitto/log
     restart: unless-stopped
+    networks:
+      - home_default
 
   caddy:
     image: caddy:2-alpine

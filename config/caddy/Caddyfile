@@ -4,10 +4,9 @@ christmas.{$DOMAIN} {
 	encode gzip
 }
 
-{$DOMAIN} {
+hass.{$DOMAIN} {
 	encode gzip
 
-	# Forward all traffic to Home Assistant container
 	reverse_proxy homeassistant:8123 {
 		transport http {
 			compression off
