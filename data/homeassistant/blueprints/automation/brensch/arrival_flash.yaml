@@ -1,8 +1,8 @@
 blueprint:
   name: Arrival flash
   description: >
-    When a person arrives home, snapshot the chosen lights, blink them a
-    colour a few times, then restore them to exactly what they were before.
+    When a person arrives home, blink the chosen lights a colour a few times,
+    then leave them on in a warm cream colour.
   domain: automation
   input:
     arrival_tracker:
@@ -14,7 +14,7 @@ blueprint:
             domain: device_tracker
     flash_lights:
       name: Lights to flash
-      description: Light(s) or group(s) to blink and then restore.
+      description: Light(s) or group(s) to blink and then leave on.
       selector:
         entity:
           multiple: true
@@ -32,12 +32,30 @@ blueprint:
         number:
           min: 1
           max: 10
+    final_color:
+      name: Final colour
+      description: RGB colour to leave the lights on after the flash.
+      default:
+        - 255
+        - 218
+        - 176
+      selector:
+        color_rgb: {}
+    final_brightness:
+      name: Final brightness
+      description: Brightness percentage to leave the lights on after the flash.
+      default: 75
+      selector:
+        number:
+          min: 1
+          max: 100
+          unit_of_measurement: "%"
     flash_lock:
       name: Arrival flash lock
       description: >
         A shared input_boolean used as a mutex. Give every arrival-flash
         automation the SAME helper so simultaneous arrivals run one-at-a-time
-        and each snapshots the true prior state.
+        and the flashes run one-at-a-time.
       selector:
         entity:
           filter:
@@ -49,8 +67,9 @@ variables:
   lights: !input flash_lights
   color: !input flash_color
   count: !input flash_count
+  final_color: !input final_color
+  final_brightness: !input final_brightness
   lock_entity: !input flash_lock
-  restore_scene: "scene.arrival_restore_{{ this.entity_id.split('.')[1] }}"
 
 triggers:
   - trigger: zone
@@ -62,7 +81,7 @@ conditions: []
 
 actions:
   # 0. Serialize: wait for any in-progress arrival flash to fully finish
-  #    (including its restore), then claim the lock. Self-heals after 30s
+  #    (including its final turn-on), then claim the lock. Self-heals after 30s
   #    if a previous run left the lock stuck.
   - wait_template: "{{ is_state(lock_entity, 'off') }}"
     timeout: "00:00:30"
@@ -70,12 +89,7 @@ actions:
   - action: input_boolean.turn_on
     target:
       entity_id: !input flash_lock
-  # 1. Snapshot current state so we can put it back exactly as it was.
-  - action: scene.create
-    data:
-      scene_id: "arrival_restore_{{ this.entity_id.split('.')[1] }}"
-      snapshot_entities: !input flash_lights
-  # 2. Blink the colour.
+  # 1. Blink the arrival colour.
   - repeat:
       count: "{{ count }}"
       sequence:
@@ -95,13 +109,15 @@ actions:
             transition: 0
         - delay:
             milliseconds: 300
-  # 3. Restore whatever they were before the flash.
-  - action: scene.turn_on
+  # 2. Leave the lights on in a warm cream colour.
+  - action: light.turn_on
     target:
-      entity_id: "{{ restore_scene }}"
+      entity_id: !input flash_lights
     data:
+      rgb_color: !input final_color
+      brightness_pct: !input final_brightness
       transition: 1
-  # 4. Release the lock for the next arrival.
+  # 3. Release the lock for the next arrival.
   - action: input_boolean.turn_off
     target:
       entity_id: !input flash_lock
