@@ -65,14 +65,15 @@
       flash_lock: input_boolean.arrival_flash_lock
 - id: '1755761528874'
   alias: Kitchen hue button
-  description: ''
+  description: Button 4 ("love button") on the kitchen dimmer notifies both phones.
+  # Was a `domain: hue` device trigger, which the Hue v2 API no longer provides —
+  # it failed to bind on every startup and the automation was auto-disabled.
+  # Now uses the button event entity, same as the dimmer automations.
   triggers:
-  - device_id: cb12369100a00d6059b100f569a8f0b7
-    domain: hue
-    type: initial_press
-    subtype: 4
-    unique_id: 10b57596-97c0-46a4-a7da-edd0a9331c76
-    trigger: device
+  - trigger: state
+    entity_id: event.kitchen_switch_button_4
+    attribute: event_type
+    to: initial_press
   conditions: []
   actions:
   - action: notify.mobile_app_schlixel

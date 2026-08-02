@@ -10,6 +10,21 @@ automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
 
+# Recorder. The four CSE7766 smart plugs used to report power+voltage every
+# second, which was 97% of all state rows (5.3M of 5.4M) and ~10 GB/day of
+# SSD writes. The real fix is on-device averaging (see data/esphome/*.yaml);
+# this block is the second line of defence.
+#   - commit_interval batches writes instead of fsyncing every second.
+#   - auto_purge/purge_keep_days are the defaults, stated explicitly so the
+#     retention window is visible rather than implied.
+# No exclude: block on purpose — the *_energy / *_energy_cost sensors feed the
+# Energy dashboard's long-term statistics, and excluding an entity from the
+# recorder also stops its statistics being generated.
+recorder:
+  auto_purge: true
+  purge_keep_days: 10
+  commit_interval: 30
+
 # Disable TTS to prevent Google Cloud errors
 tts:
 
