@@ -70,16 +70,45 @@ services:
         max-size: "10m"
         max-file: "5"
 
+  # Keeps the zone's A records pointed at this house's public IP.
+  #
+  # Was oznu/cloudflare-ddns, which is unmaintained and verifies credentials
+  # against /user/tokens/verify. Account-scoped tokens (the `cfat_` kind) only
+  # verify at /accounts/{id}/tokens/verify, so oznu 401'd on a perfectly valid
+  # token and crash-looped ~47k times over five weeks without ever updating DNS.
+  #
+  # DOMAINS covers the wildcard as well as the apex. hass.brensch.com resolves
+  # via *.brensch.com, and the old SUBDOMAIN=@ config only ever touched the
+  # apex — so even with working auth, remote access would have broken on the
+  # next IP change.
   cloudflare-ddns:
-    image: oznu/cloudflare-ddns:latest
+    image: favonia/cloudflare-ddns:latest
     container_name: cloudflare-ddns
-    environment:
-      - API_KEY=${CLOUDFLARE_API_TOKEN}
-      - ZONE=${DOMAIN}
-      - SUBDOMAIN=@
-      - PROXIED=false
-    network_mode: host
     restart: unless-stopped
+    # Only needs outbound HTTPS; host networking bought nothing.
+    networks:
+      - home_default
+    user: "${UID}:${GID}"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+      - "DOMAINS=${DOMAIN},*.${DOMAIN}"
+      - IP4_PROVIDER=cloudflare.trace
+      - IP6_PROVIDER=none
+      - PROXIED=false
+      - TTL=60          # matches the existing records; avoids a TTL-mismatch warning
+      - "UPDATE_CRON=@every 5m"
+      - DELETE_ON_STOP=false
+      - TZ=America/Los_Angeles
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   esphome:
     image: esphome/esphome:latest
