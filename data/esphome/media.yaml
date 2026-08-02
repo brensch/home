@@ -80,17 +80,30 @@ status_led:
 # --- HARDWARE: POWER MONITORING (CSE7766) ---
 sensor:
   - platform: cse7766
+    # Report on change, not on a timer. 1s reporting was ~1M rows/sensor per
+    # 10 days in the HA recorder (97% of all state rows).
+    #   throttle_average - smooth the CSE7766's raw jitter first, so `delta`
+    #                      reacts to real load changes and not to sensor noise.
+    #   delta            - only publish once the smoothed value actually moves.
+    #   heartbeat        - floor: republish at least this often so the entity
+    #                      never goes stale and statistics buckets stay filled.
     voltage:
       name: "Voltage"
       accuracy_decimals: 1
       filters:
-        - throttle_average: 1s
+        - throttle_average: 10s
+        - or:
+            - delta: 1.0
+            - heartbeat: 600s
     power:
       name: "Power"
       id: power_sensor
       accuracy_decimals: 2
       filters:
-        - throttle_average: 1s
+        - throttle_average: 5s
+        - or:
+            - delta: 1.0
+            - heartbeat: 300s
     energy:
       name: "Energy"
       accuracy_decimals: 2
