@@ -96,3 +96,21 @@ herdcore.{$DOMAIN} {
 		X-XSS-Protection "1; mode=block"
 	}
 }
+
+snek.{$DOMAIN} {
+	encode gzip
+
+	reverse_proxy host.docker.internal:8080 {
+		transport http {
+			compression off
+		}
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		Referrer-Policy no-referrer
+		X-Content-Type-Options nosniff
+		X-Frame-Options SAMEORIGIN
+		X-XSS-Protection "1; mode=block"
+	}
+}
