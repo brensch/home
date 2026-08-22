@@ -1,3 +1,11 @@
+# Global: HTTP/3 off. UDP 443 belongs to the snekgame WebTransport server,
+# so advertising h3 would send browsers' page loads to the wrong endpoint.
+{
+	servers {
+		protocols h1 h2
+	}
+}
+
 {$DOMAIN} {
 	root * /srv/www
 	file_server
