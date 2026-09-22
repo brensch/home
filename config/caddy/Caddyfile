@@ -122,3 +122,23 @@ snek.{$DOMAIN} {
 		X-XSS-Protection "1; mode=block"
 	}
 }
+
+# The house shortlist (~/houses, its own repository and container). It is reached over Caddy's own docker
+# network, so it is published on no public or LAN interface at all and this block is the single way in. The
+# app does its own login, so no credentials live in this repository, and it holds no financial data of any
+# kind -- which is the whole reason it was moved out of the finance site.
+house.{$DOMAIN} {
+	encode gzip
+
+	reverse_proxy houses:8096 {
+		transport http {
+			compression off
+		}
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		# A private shortlist has no business in a search index.
+		X-Robots-Tag "noindex, nofollow, noarchive"
+	}
+}
