@@ -40,7 +40,8 @@ services:
       - home_default
 
   caddy:
-    image: caddy:2-alpine
+    # Pinned by digest (the 2026-09-17 rebuild); re-pull on purpose, not by accident.
+    image: caddy:2.11.4-alpine@sha256:6aeddd44c3078b0f9a35206472a11420648a79c184603ef95957d0a20044cb2b
     container_name: caddy
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -63,7 +64,11 @@ services:
       - homeassistant
     restart: unless-stopped
     networks:
-      - home_default
+      home_default:
+      # Shared only with the house shortlist (~/houses); Caddy's fixed address there is the one the app trusts
+      # to say where a request came from.
+      houses_edge:
+        ipv4_address: 172.31.96.2
     logging:
       driver: "json-file"
       options:
@@ -179,5 +184,7 @@ volumes:
 
 networks:
   home_default:
+    external: true
+  houses_edge:
     external: true
 

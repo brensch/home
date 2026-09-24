@@ -123,17 +123,27 @@ snek.{$DOMAIN} {
 	}
 }
 
-# The house shortlist (~/houses, its own repository and container). It is reached over Caddy's own docker
-# network, so it is published on no public or LAN interface at all and this block is the single way in. The
+# The house shortlist (~/houses, its own repository and container). It is reached over houses_edge, a docker
+# network only Caddy and it share, so it is published on no public or LAN interface at all and this block is the single way in. The
 # app does its own login, so no credentials live in this repository, and it holds no financial data of any
 # kind -- which is the whole reason it was moved out of the finance site.
 house.{$DOMAIN} {
 	encode gzip
 
+	# Who tried to get in, and from where: the app sees only Caddy's address.
+	log {
+		output file /data/logs/house.log {
+			roll_size 10MiB
+			roll_keep 5
+		}
+		format json
+	}
+
 	reverse_proxy houses:8096 {
 		transport http {
 			compression off
 		}
+		header_down -Server
 	}
 
 	header {
