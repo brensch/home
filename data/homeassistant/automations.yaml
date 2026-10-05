@@ -450,19 +450,9 @@
   actions:
   - action: light.turn_off
     target:
-      entity_id: light.lines_desk
+      entity_id:
+      - light.kitchen_all
+      - light.lines_desk
     data:
       transition: 5
-  # Someone used the kitchen switch in the last 10 minutes: they're probably in
-  # there (e.g. the show got resumed while they were up), so leave it lit.
-  - if:
-    - condition: template
-      value_template: >
-        {{ now() - states.event.kitchen_switch_button_1.last_changed > timedelta(minutes=10) }}
-    then:
-    - action: light.turn_off
-      target:
-        entity_id: light.kitchen_all
-      data:
-        transition: 5
   mode: single
