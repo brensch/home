@@ -465,3 +465,41 @@
       data:
         transition: 5
   mode: single
+- id: remember_light_colours
+  alias: Remember lights' last colour
+  description: When a colour light turns off, save how it looked so flash_lights can put it back.
+  # A light that's off has no colour in HA, but the bulb still remembers one.
+  # This keeps a copy (scene.last_on_<light>) for flash_lights. Dynamic scenes
+  # don't survive an HA restart; flash_lights falls back to warm white then.
+  triggers:
+  - trigger: state
+    entity_id:
+    - light.lines_kitchen
+    - light.lines_desk
+    - light.fan_front
+    - light.tv_left
+    - light.tv_right
+    - light.hektar
+    - light.shelf
+    from: 'on'
+    to: 'off'
+  conditions:
+  # flash_lights turning a light back off isn't the light's own look.
+  - condition: state
+    entity_id: script.flash_lights
+    state: 'off'
+  actions:
+  - action: scene.create
+    data:
+      scene_id: "last_on_{{ trigger.entity_id | replace('.', '_') }}"
+      entities: >
+        {% set a = trigger.from_state.attributes %}
+        {% if a.color_mode == 'color_temp' %}
+          {% set look = {'state': 'on', 'brightness': a.brightness, 'color_temp_kelvin': a.color_temp_kelvin} %}
+        {% elif a.hs_color %}
+          {% set look = {'state': 'on', 'brightness': a.brightness, 'hs_color': a.hs_color} %}
+        {% else %}
+          {% set look = {'state': 'on', 'brightness': a.brightness} %}
+        {% endif %}
+        {{ {trigger.entity_id: look} }}
+  mode: parallel

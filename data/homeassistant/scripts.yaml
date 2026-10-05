@@ -59,10 +59,14 @@ flash_lights:
     - condition: "{{ bulbs | count > 0 }}"
     - variables:
         was_off: "{{ bulbs | select('is_state', 'off') | list }}"
-    - action: scene.create
-      data:
-        scene_id: flash_lights_before
-        snapshot_entities: "{{ bulbs }}"
+        was_on: "{{ bulbs | reject('in', was_off) | list }}"
+    - if:
+      - "{{ was_on | count > 0 }}"
+      then:
+      - action: scene.create
+        data:
+          scene_id: flash_lights_before
+          snapshot_entities: "{{ was_on }}"
     - action: light.turn_on
       target:
         entity_id: "{{ bulbs }}"
@@ -72,21 +76,38 @@ flash_lights:
         transition: 0
     - delay:
         seconds: "{{ hold | default(2) }}"
-    # Bulbs remember the last colour they showed, so a light that was off would
-    # otherwise come back on later in the flash colour. Put those on warm white
-    # first; the restore below then turns them off from there.
+    # Lights that were off: bulbs remember the last colour they showed and can't
+    # take a new one while off, so show each its own saved colour for an instant
+    # (from the "Remember lights' last colour" automation; warm white failing
+    # that) and turn it off again. A plain off, no transition: Nanoleaf turns
+    # off with any transition by zeroing brightness, which it then forgets.
+    - repeat:
+        for_each: "{{ was_off }}"
+        sequence:
+        - variables:
+            saved: "scene.last_on_{{ repeat.item | replace('.', '_') }}"
+        - if:
+          - "{{ saved in states.scene | map(attribute='entity_id') | list }}"
+          then:
+          - action: scene.turn_on
+            target:
+              entity_id: "{{ saved }}"
+          else:
+          - action: light.turn_on
+            target:
+              entity_id: "{{ repeat.item }}"
+            data:
+              color_temp_kelvin: 2700
+              brightness_pct: 100
+        - action: light.turn_off
+          target:
+            entity_id: "{{ repeat.item }}"
+    # Lights that were on go back exactly as they were.
     - if:
-      - "{{ was_off | count > 0 }}"
+      - "{{ was_on | count > 0 }}"
       then:
-      - action: light.turn_on
+      - action: scene.turn_on
         target:
-          entity_id: "{{ was_off }}"
+          entity_id: scene.flash_lights_before
         data:
-          color_temp_kelvin: 2700
-          brightness_pct: 100
-          transition: 0
-    - action: scene.turn_on
-      target:
-        entity_id: scene.flash_lights_before
-      data:
-        transition: 1
+          transition: 1
