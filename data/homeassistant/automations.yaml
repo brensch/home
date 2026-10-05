@@ -306,100 +306,6 @@
       color_temp_kelvin: 4000
       transition: 1200
   mode: single
-- id: movie_mode
-  alias: Movie mode
-  description: After dark, a video app or input on the TV dims the living room; the home screen or music puts the lights back as they were; TV off sets the living room to normal (Bright) right away.
-  # media_player.tv (Android TV Remote) pushes power and the foreground app the
-  # moment they change. TV off reacts instantly; app changes settle for 3 s so
-  # flicking between apps doesn't strobe the room.
-  triggers:
-  - trigger: state
-    entity_id: media_player.tv
-    to: 'off'
-    not_from:
-    - unknown
-    - unavailable
-    id: tv_off
-  - trigger: state
-    entity_id: media_player.tv
-    attribute: app_id
-    for: 00:00:03
-    id: app
-  actions:
-  # Decide from the state *now*, not at trigger time: TV off fires both
-  # triggers, and the second run must see that the first already restored.
-  - variables:
-      not_watching:
-      - com.spocky.projengmenu          # Projectivy, the home screen since 2026-10-05
-      - com.google.android.tvlauncher
-      - com.google.android.apps.tv.launcherx
-      - com.android.tv.settings
-      - com.spotify.tv.android
-      watching: >
-        {{ is_state('media_player.tv', 'on')
-           and state_attr('media_player.tv', 'app_id') not in not_watching }}
-      dimmed: "{{ is_state('input_boolean.movie_dimmed', 'on') }}"
-      room: >
-        {{ (state_attr('light.living_room', 'entity_id') | list + ['light.lines_desk'])
-           | select('has_value') | list }}
-  - choose:
-    - conditions:
-      - "{{ watching and not dimmed }}"
-      - condition: state
-        entity_id: sun.sun
-        state: below_horizon
-      - condition: state
-        entity_id: light.living_room
-        state: 'on'
-      sequence:
-      # Save the room's real look on the devices (survives HA restarts), then dim.
-      - action: shell_command.light_memory
-        data:
-          args: "save movie {{ room | join(' ') }}"
-      - action: input_boolean.turn_on
-        target:
-          entity_id: input_boolean.movie_dimmed
-      - action: scene.turn_on
-        target:
-          entity_id: scene.living_room_dimmed
-        data:
-          transition: 2
-    # TV off after dark: the living room goes to its normal look, Hue's
-    # "Bright" (100%, 2732 K). Not the saved pre-film look: that can be wrong
-    # (it once saved the room at 1%), and TV off means "lights up, back to normal".
-    - conditions:
-      - condition: state
-        entity_id: media_player.tv
-        state: 'off'
-      - condition: state
-        entity_id: sun.sun
-        state: below_horizon
-      sequence:
-      - action: input_boolean.turn_off
-        target:
-          entity_id: input_boolean.movie_dimmed
-      - action: scene.turn_on
-        target:
-          entity_id: scene.living_room_bright
-        data:
-          transition: 1
-    # Back to the home screen or music with the TV still on.
-    - conditions:
-      - "{{ not watching and dimmed and is_state('media_player.tv', 'on') }}"
-      sequence:
-      - action: input_boolean.turn_off
-        target:
-          entity_id: input_boolean.movie_dimmed
-      # If someone turned the room off during the film, don't light it back up.
-      - if:
-        - condition: state
-          entity_id: light.living_room
-          state: 'on'
-        then:
-        - action: shell_command.light_memory
-          data:
-            args: restore movie --fade 1
-  mode: queued
 - id: balcony_motion_light
   alias: Balcony motion light
   description: After dark, outdoor motion turns the balcony on until 3 minutes after motion stops. Leaves it alone if it was already on.
@@ -430,12 +336,13 @@
     target:
       entity_id: light.balcony
   mode: single
-- id: kitchen_off_when_tv_plays
-  alias: Kitchen off when the TV plays
-  description: When the TV starts or resumes playing video, fade the kitchen lights and the desk Lines off over 5 seconds.
-  # media_player.tv_cast (Google Cast) pushes playing/paused for YouTube and other
-  # Cast-based apps, including ones opened with the TV remote. Android TV Remote
-  # (media_player.tv) only knows which app is open, not whether it's playing.
+- id: tv_lights
+  alias: TV lights
+  description: Playing turns the kitchen off (always) and, after dark, dims the living room; stopping brings the living room back up.
+  # media_player.tv_cast (Google Cast) reports playing/paused/buffering for
+  # YouTube, Stremio and other Cast-based apps, including ones opened with the
+  # remote. Stremio flickers between states when starting or seeking, so
+  # "stopped" means not playing for 5 s, and resuming within that does nothing.
   triggers:
   - trigger: state
     entity_id: media_player.tv_cast
@@ -443,16 +350,76 @@
     not_from:
     - unknown
     - unavailable
-  conditions:
-  # Music (Spotify etc. over Cast) isn't a reason to darken the kitchen.
-  - condition: template
-    value_template: "{{ state_attr('media_player.tv_cast', 'media_content_type') != 'music' }}"
+    id: playing
+  - trigger: template
+    value_template: "{{ not is_state('media_player.tv_cast', 'playing') }}"
+    for: 00:00:05
+    id: stopped
   actions:
-  - action: light.turn_off
-    target:
-      entity_id:
-      - light.kitchen_all
-      - light.lines_desk
-    data:
-      transition: 5
-  mode: single
+  - variables:
+      dimmed: "{{ is_state('input_boolean.movie_dimmed', 'on') }}"
+      room: >
+        {{ (state_attr('light.living_room', 'entity_id') | list + ['light.lines_desk'])
+           | select('has_value') | list }}
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: playing
+      # Music (Spotify etc. over Cast) isn't a reason to change the lights.
+      - "{{ state_attr('media_player.tv_cast', 'media_content_type') != 'music' }}"
+      sequence:
+      # After dark, save the living room's real look (on the devices, survives
+      # restarts) before anything changes, so stopping can put it back.
+      - if:
+        - "{{ not dimmed }}"
+        - condition: state
+          entity_id: sun.sun
+          state: below_horizon
+        - condition: state
+          entity_id: light.living_room
+          state: 'on'
+        then:
+        - action: shell_command.light_memory
+          data:
+            args: "save movie {{ room | join(' ') }}"
+        - action: input_boolean.turn_on
+          target:
+            entity_id: input_boolean.movie_dimmed
+        - action: scene.turn_on
+          target:
+            entity_id: scene.living_room_dimmed
+          data:
+            transition: 2
+      # Kitchen off, every time. The Hue kitchen fades; the Lines just switch
+      # off, because HA's Nanoleaf integration turns a transition-off into
+      # "forget the brightness".
+      - action: light.turn_off
+        target:
+          entity_id:
+          - light.kitchen
+          - light.brightboy1
+        data:
+          transition: 5
+      - action: light.turn_off
+        target:
+          entity_id:
+          - light.lines_kitchen
+          - light.lines_desk
+    - conditions:
+      - condition: trigger
+        id: stopped
+      - "{{ dimmed }}"
+      sequence:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.movie_dimmed
+      # If someone turned the living room off during the film, leave it off.
+      - if:
+        - condition: state
+          entity_id: light.living_room
+          state: 'on'
+        then:
+        - action: shell_command.light_memory
+          data:
+            args: restore movie --fade 1
+  mode: queued

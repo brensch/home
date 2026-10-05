@@ -70,8 +70,7 @@ views:
             icon: mdi:robot
           # Tap to pause/resume.
           - {type: tile, entity: automation.arrival_flash, name: Arrival flash, tap_action: {action: toggle}}
-          - {type: tile, entity: automation.movie_mode, name: Movie mode, tap_action: {action: toggle}}
-          - {type: tile, entity: automation.kitchen_off_when_the_tv_plays, name: Kitchen off on play, tap_action: {action: toggle}}
+          - {type: tile, entity: automation.tv_lights, name: TV lights, tap_action: {action: toggle}}
           - {type: tile, entity: automation.turn_off_lights_when_we_leave, name: Lights off when we leave, tap_action: {action: toggle}}
           - {type: tile, entity: automation.wake_up_light, name: Wake-up light, tap_action: {action: toggle}}
           - {type: tile, entity: automation.balcony_motion_light, name: Balcony motion, tap_action: {action: toggle}}
