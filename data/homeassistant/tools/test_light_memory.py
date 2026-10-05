@@ -68,6 +68,23 @@ class HueTests(unittest.TestCase):
         self.assertNotIn("dynamics", b)
 
 
+class ParallelTests(unittest.TestCase):
+    def test_each_runs_lights_concurrently(self):
+        import threading
+        barrier = threading.Barrier(3, timeout=2)  # only passes if all 3 run at once
+        results, failed = lm._each({"a": 1, "b": 2, "c": 3}, lambda eid, dev: (barrier.wait(), dev)[1])
+        self.assertEqual((results, failed), ({"a": 1, "b": 2, "c": 3}, []))
+
+    def test_each_collects_failures_without_stopping(self):
+        def fn(eid, dev):
+            if eid == "b":
+                raise OSError("offline")
+            return dev
+        results, failed = lm._each({"a": 1, "b": 2}, fn)
+        self.assertEqual(results, {"a": 1})
+        self.assertEqual(failed, ["b: offline"])
+
+
 class OffTests(unittest.TestCase):
     def test_hue_off_fades_on_the_bridge(self):
         self.assertEqual(lm.Hue("bridge", "k", "abc", FakeHttp({})).off_body(1),

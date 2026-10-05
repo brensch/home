@@ -26,11 +26,14 @@ What the devices allow while staying off:
             is sent with it, and a panel at brightness 0 comes back at 100%.
 """
 
+import http.client
 import json
 import os
 import ssl
 import sys
+import threading
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 
 CONFIG = os.environ.get("HASS_CONFIG", "/config")
 STATE_DIR = os.path.join(CONFIG, ".light_memory")
@@ -52,13 +55,51 @@ def _http(method, url, body=None, headers=None, insecure=False):
     return json.loads(raw) if raw else None
 
 
+class Connection:
+    """One kept-alive connection per light, opened ahead of time by prepare().
+
+    A fresh HTTPS handshake to the Hue bridge costs ~100 ms, which made Hue
+    bulbs land well after the Nanoleafs; with the connection already open the
+    request goes straight out. Same call signature as _http."""
+
+    def __init__(self, scheme, host):
+        self.scheme, self.host, self.conn = scheme, host, None
+
+    def prepare(self):
+        if self.conn is None:
+            if self.scheme == "https":
+                self.conn = http.client.HTTPSConnection(self.host, timeout=TIMEOUT,
+                                                        context=ssl._create_unverified_context())
+            else:
+                self.conn = http.client.HTTPConnection(self.host, timeout=TIMEOUT)
+            self.conn.connect()
+
+    def __call__(self, method, url, body=None, headers=None, insecure=False):
+        self.prepare()
+        path = "/" + url.split("/", 3)[3]
+        data = json.dumps(body).encode() if body is not None else None
+        hdrs = dict(headers or {}, **({"Content-Type": "application/json"} if data is not None else {}))
+        try:
+            self.conn.request(method, path, body=data, headers=hdrs)
+            resp = self.conn.getresponse()
+        except (http.client.HTTPException, OSError):  # server closed the idle connection
+            self.conn = None
+            self.prepare()
+            self.conn.request(method, path, body=data, headers=hdrs)
+            resp = self.conn.getresponse()
+        raw = resp.read()
+        if resp.status >= 400:
+            raise OSError(f"HTTP {resp.status}: {raw[:200]!r}")
+        return json.loads(raw) if raw else None
+
+
 class Hue:
     """A Hue bulb, addressed through the bridge's CLIP v2 API."""
 
-    def __init__(self, host, key, light_id, http=_http):
+    def __init__(self, host, key, light_id, http=None):
         self.url = f"https://{host}/clip/v2/resource/light/{light_id}"
         self.headers = {"hue-application-key": key}
-        self.http = http
+        self.http = http or Connection("https", host)
 
     def read(self):
         d = self.http("GET", self.url, headers=self.headers, insecure=True)["data"][0]
@@ -98,9 +139,9 @@ class Hue:
 class Nanoleaf:
     """A Nanoleaf panel set, addressed through its local API."""
 
-    def __init__(self, host, token, http=_http):
+    def __init__(self, host, token, http=None):
         self.base = f"http://{host}:16021/api/v1/{token}"
-        self.http = http
+        self.http = http or Connection("http", f"{host}:16021")
 
     def read(self):
         s = self.http("GET", self.base + "/state")
@@ -146,7 +187,7 @@ class Nanoleaf:
         self.http("PUT", self.base + "/state", self.off_body(fade))
 
 
-def devices(entity_ids, config=CONFIG, http=_http):
+def devices(entity_ids, config=CONFIG, http=None):
     """Map light entity_ids to device handles using HA's registries."""
     with open(os.path.join(config, ".storage", "core.entity_registry")) as f:
         ents = {e["entity_id"]: e for e in json.load(f)["data"]["entities"]}
@@ -167,35 +208,54 @@ def devices(entity_ids, config=CONFIG, http=_http):
     return out
 
 
-def save(name, entity_ids, config=CONFIG, http=_http):
-    saved = {eid: dev.read() for eid, dev in devices(entity_ids, config, http).items()}
+def _each(devs, fn):
+    """Run fn(entity_id, device) for every light at once, not one after another:
+    sequential requests would land on the lights tens of milliseconds apart each.
+    Connections are opened first, then every request is released together.
+    Returns ({entity_id: result}, [failures]); one dead light doesn't stop the rest."""
+    results, failed = {}, []
+    start = threading.Barrier(len(devs)) if devs else None
+
+    def run(eid, dev):
+        try:
+            prepare = getattr(getattr(dev, "http", None), "prepare", None)
+            if prepare:
+                prepare()
+        finally:
+            start.wait(timeout=TIMEOUT)  # don't hold the others hostage if this one is dead
+        return fn(eid, dev)
+
+    with ThreadPoolExecutor(max_workers=max(1, len(devs))) as pool:
+        futures = {eid: pool.submit(run, eid, dev) for eid, dev in devs.items()}
+        for eid, fut in futures.items():
+            try:
+                results[eid] = fut.result()
+            except Exception as e:
+                failed.append(f"{eid}: {e}")
+    return results, failed
+
+
+def save(name, entity_ids, config=CONFIG, http=None):
+    saved, failed = _each(devices(entity_ids, config, http), lambda eid, dev: dev.read())
+    if failed:
+        raise SystemExit("save failed for " + "; ".join(failed))
     os.makedirs(os.path.join(config, ".light_memory"), exist_ok=True)
     with open(os.path.join(config, ".light_memory", f"{name}.json"), "w") as f:
         json.dump(saved, f)
     return saved
 
 
-def restore(name, fade=1.0, config=CONFIG, http=_http):
+def restore(name, fade=1.0, config=CONFIG, http=None):
     with open(os.path.join(config, ".light_memory", f"{name}.json")) as f:
         saved = json.load(f)
-    failed = []
-    for eid, dev in devices(saved, config, http).items():
-        try:
-            dev.write(saved[eid], fade)
-        except Exception as e:  # keep going so one dead bulb doesn't strand the rest
-            failed.append(f"{eid}: {e}")
+    _, failed = _each(devices(saved, config, http), lambda eid, dev: dev.write(saved[eid], fade))
     if failed:
         raise SystemExit("restore failed for " + "; ".join(failed))
     return saved
 
 
-def off(entity_ids, fade=1.0, config=CONFIG, http=_http):
-    failed = []
-    for eid, dev in devices(entity_ids, config, http).items():
-        try:
-            dev.off(fade)
-        except Exception as e:
-            failed.append(f"{eid}: {e}")
+def off(entity_ids, fade=1.0, config=CONFIG, http=None):
+    _, failed = _each(devices(entity_ids, config, http), lambda eid, dev: dev.off(fade))
     if failed:
         raise SystemExit("off failed for " + "; ".join(failed))
 
