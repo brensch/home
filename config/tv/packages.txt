@@ -1,9 +1,14 @@
 # Packages disabled on the Sony Bravia (XBR-75X900H / "BRAVIA VH1", Android TV 12).
 # One per line; "[group]" lines start a group. tv.sh reads this file.
-# Disabled with `pm disable-user --user 0`, never uninstalled: `tv.sh adb pm enable <pkg>` undoes one.
+# Disabled with `pm disable-user --user 0`, never uninstalled: `tv.sh enable <group>` or
+# `tv.sh adb shell pm enable <pkg>` undoes it.
+#
+# Policy (2026-10-05): an appliance. Disable only what is clearly cruft (ads, promos,
+# telemetry, the store/updaters, unused apps, hotel mode, hardware this TV doesn't have).
+# Anything not fully understood stays enabled: see the commented list at the end.
 
 [updates]
-# Everything that updates the TV or its apps. tv.sh enable-updates / disable-updates toggle just this group.
+# Everything that updates the TV or its apps. Apps were all updated 2026-10-05 first.
 com.android.vending                     # Google Play Store (app updates)
 com.sony.dtv.systemupdate               # Sony firmware updater
 com.sony.dtv.update
@@ -14,6 +19,8 @@ com.sony.dtv.notificationcenter         # Sony notifications, incl. "update avai
 [launcher]
 com.google.android.tvlauncher           # Google home screen; Projectivy (com.spocky.projengmenu) is home instead
 com.google.android.tvrecommendations    # recommendation rows for that launcher
+com.sony.dtv.tvlaunchercustomizer       # Sony's customisations of that launcher
+com.sony.dtv.tvlaunchercustomizer.overlay.apporder
 
 [tracking]
 tv.samba.ssm                            # Samba TV: recognises what's on screen, sells it to advertisers
@@ -27,6 +34,7 @@ com.sony.dtv.sonyselect
 com.sony.dtv.demosupport
 com.sony.dtv.demosystemsupport
 com.sony.dtv.multiscreendemo
+android.autoinstalls.config.sony.bravia # Sony's list of promo apps to auto-install
 
 [unused-apps]
 com.google.android.feedback
@@ -35,114 +43,56 @@ com.google.android.videos
 com.netflix.ninja
 com.netflix.partner.ncm
 com.amazon.amazonvideo.livingroom       # Prime Video
-com.apple.atve.sony.appletv             # Apple TV app (AirPlay is separate and stays)
+com.apple.atve.sony.appletv             # Apple TV app
 com.disney.disneyplus
 com.google.android.youtube.tvmusic
 
 [voice]
-com.google.android.katniss              # Google Assistant / voice search
+com.google.android.katniss              # Google app: Assistant / voice search (the mic button)
 com.sony.dtv.voicesearch
 com.sony.dtv.assistantadapter
 com.sony.dtv.voicerecognitionconfirmation
 
-[antenna-irbox-dlna]
-com.sony.dtv.tvinput.atsc3tuner         # ATSC 3.0 antenna tuner (basic tuner kept: the TV app needs it)
+[airplay]
+com.sony.dtv.airplayapp
+
+[antenna]
+# No antenna. The basic tuner (com.sony.dtv.tvinput.tuner) stays: the TV app expects it.
+com.sony.dtv.tvinput.atsc3tuner
 com.sony.dtv.tvinput.atsc3tuner.drmlicenseinstaller
 com.sony.dtv.interactivetvutil
 com.sony.dtv.interactivetvutil.output
 com.sony.dtv.citool                     # CI card
-com.uei.quicksetsdk.sony                # IR control of a cable/satellite box
-com.sony.dtv.irblaster
-com.sony.dtv.irbservice
-com.sony.dtv.homenetwork                # DLNA
-com.sony.huey.dlna.module
-com.sony.huey.dlna.renderersettings
-com.sonyericsson.dlna
-
-[sony-cloud-and-web]
-com.sony.dtv.seeds.iot                  # Sony cloud: Alexa/Google smart-home link, remote start via Sony apps
-com.sony.dtv.seeds.iot.remotestart
-com.sony.dtv.webapi.core                # Sony network control API (old Bravia integration)
-com.vewd.core.service                   # Vewd / Opera TV web runtime
-com.sony.dtv.browser.webappplatform
-com.sony.dtv.browser.webappruntime
-com.sony.dtv.browser.webappruntimeextension
-com.sony.dtv.browser.webappservice
-
-[no-camera]
-com.sony.dtv.gestureapp
-com.sony.dtv.sensingfusionservice
-com.sony.dtv.sensingcamera.settings
-com.sony.dtv.sensingcamera.fwupdate
-com.sony.dtv.distancealert
-
-[hotel-and-pro]
-com.sony.dtv.b2b.rs232csupport
-com.sony.dtv.b2b.vendorprotocol
-com.sony.dtv.b2b.hotelmode
-com.sony.dtv.b2b.prosettings
-com.sony.dtv.b2b.importexport
-
-[extras]
-com.sony.dtv.customersupport
-com.sony.dtv.smarthelp
-com.sony.dtv.helpguidecontents
-com.sony.dtv.privacypolicy
-com.sony.dtv.smarthomesettings
-com.sony.dtv.accessibility.tutorial
-com.google.android.marvin.talkback
-com.google.android.tts
-com.google.android.backdrop             # ambient-mode photos
-com.android.printspooler
-com.google.android.syncadapters.calendar
-
-[airplay]
-com.sony.dtv.airplayapp                 # AirPlay receiver (unused)
-
-[setup-and-backup]
-# First-run setup and backup. A factory reset re-enables everything, so setup still works then.
-com.google.android.tungsten.setupwraith # Google setup wizard
-com.sony.dtv.quicksetup                 # Sony initial setup
-com.sony.dtv.QuickSetupCustomizer
-com.google.android.partnersetup
-com.google.android.onetimeinitializer
-com.android.managedprovisioning
-android.autoinstalls.config.sony.bravia # Sony's list of promo apps to auto-install
-com.android.backupconfirm
-com.android.sharedstoragebackup
-com.android.wallpaperbackup
-com.android.localtransport
-
-[broadcast]
-# Antenna-broadcast plumbing (no antenna). The clock still sets itself over the internet.
 com.sony.dtv.broadcastservicesetup
 com.sony.dtv.broadcastclock.broadcastrequirementcontrol
 com.sony.dtv.broadcastclock.clocksyncservice
 com.sony.dtv.tvsettingsbroadcast
 com.sony.dtv.parentalcontrolsettings    # broadcast content ratings
 
-[sony-extras-2]
-com.sony.dtv.ecodashboard
-com.sony.dtv.eulaviewer
-com.sony.dtv.softwarelicense
-com.sony.dtv.sonybugreportsys
-com.sony.dtv.sonyloglevelsettingsys
-com.sony.dtv.servicemode                # service menu
-com.sony.dtv.hrtfsettings               # headphone spatial audio
-com.sony.dtv.acousticautocalibration    # one-off speaker calibration
-com.sony.dtv.tvpositionscreen           # one-off "where's the TV" setup screen
-com.sony.dtv.seconddispsetting
-com.sony.dtv.smartmediaapp              # USB media player
-com.sony.dtv.osat.music
-com.sony.dtv.hddmgr                     # USB recording drive manager
-com.sony.dtv.usbmsgservice              # "USB device connected" popups
-com.sony.dtv.tvlaunchercustomizer       # customises the (disabled) Google launcher
-com.sony.dtv.tvlaunchercustomizer.overlay.apporder
-com.sony.dtv.seeds.auth                 # Sony account auth for the (disabled) Sony cloud
-com.sony.dtv.da.service
+[ir-set-top-box]
+com.uei.quicksetsdk.sony                # IR control of a cable/satellite box (none)
+com.sony.dtv.irblaster
 
-[b2b-rest]
-# Hotel/pro leftovers; b2b.frameworkextension and b2b.deviceadminsettings stay.
+[sony-cloud]
+com.sony.dtv.seeds.iot                  # Sony cloud: Alexa/Google smart-home link, remote start via Sony apps
+com.sony.dtv.seeds.iot.remotestart
+com.sony.dtv.seeds.auth
+
+[no-camera]
+# Features for Sony's optional camera, which this TV doesn't have. The light-sensor
+# service (sensingfusionservice) is NOT here: Sony's settings use it.
+com.sony.dtv.gestureapp
+com.sony.dtv.distancealert
+com.sony.dtv.sensingcamera.settings
+com.sony.dtv.sensingcamera.fwupdate
+
+[hotel-and-pro]
+# Hotel / pro-display mode. b2b.frameworkextension and b2b.deviceadminsettings stay.
+com.sony.dtv.b2b.rs232csupport
+com.sony.dtv.b2b.vendorprotocol
+com.sony.dtv.b2b.hotelmode
+com.sony.dtv.b2b.prosettings
+com.sony.dtv.b2b.importexport
 com.sony.dtv.b2b.adminpassword
 com.sony.dtv.b2b.ipcontrolsettings
 com.sony.dtv.b2b.noderuntime.normal
@@ -151,17 +101,76 @@ com.sony.dtv.b2b.noderuntimeextension.bpk
 com.sony.dtv.b2b.noderuntimeextension.node_20_11_1
 com.sony.dtv.b2b.webappruntimedrm
 
-[android-extras]
+[extras]
+com.sony.dtv.customersupport
+com.sony.dtv.smarthelp
+com.sony.dtv.helpguidecontents
+com.sony.dtv.privacypolicy
+com.sony.dtv.smarthomesettings          # smart-speaker linking settings
+com.sony.dtv.accessibility.tutorial
+com.google.android.marvin.talkback
+com.google.android.tts
+com.google.android.backdrop             # ambient-mode photos
+com.android.printspooler
+com.google.android.syncadapters.calendar
+
+[idle-extras]
+# Tested safe on Bravias by community debloat lists (UAD, sarabveer, atais, skinny-bravia); not running anyway.
+com.google.android.onetimeinitializer
+com.google.android.partnersetup
+com.sony.dtv.osat.music
 com.android.dreams.basic                # screensaver
-com.android.soundpicker
-com.android.htmlviewer
-com.android.dynsystem
-com.android.hotspot2.osulogin
+com.sony.dtv.seconddispsetting          # picture-in-picture setting
+com.sony.dtv.softwarelicense
+com.sony.dtv.smartmediaapp              # Sony media player (USB/DLNA)
+com.sony.dtv.da.service                 # DeviceAgent: Sony remote support/management
+com.sony.dtv.sonybugreportsys
+com.sony.dtv.servicemode                # service menu
 com.android.captiveportallogin          # hotel Wi-Fi login pages
 com.android.vpndialogs
+com.android.wallpaperbackup
+com.android.sharedstoragebackup
+com.android.hotspot2.osulogin
 com.android.pacprocessor
 com.android.proxyhandler
-com.android.settings.intelligence       # Settings search suggestions
-com.android.certinstaller
-com.android.statementservice            # web-link verification for apps; crashed on boot (couldn't open its database)
-com.mediatek.dmagent                    # MediaTek media-server agent; crashed on boot once DLNA/USB media were off
+com.android.managedprovisioning         # work profiles
+com.android.soundpicker
+com.sony.dtv.browser.webappservice
+com.vewd.core.service                   # Vewd web engine; reports metrics to metrics.core.cloud.vewd.com
+
+[running-extras]
+# Tested safe on Bravias; these were running (DLNA, Sony web runtime and API, IR blaster, log settings).
+com.sony.huey.dlna.module               # DLNA renderer ("play to TV")
+com.sony.huey.dlna.renderersettings
+com.sonyericsson.dlna
+com.sony.dtv.homenetwork                # DLNA media browsing
+com.sony.dtv.browser.webappruntime      # Sony HTML5 app runtime
+com.sony.dtv.webapi.core                # Sony network control API; phones home to ndmdhs.com; HA doesn't use it
+com.sony.dtv.irbservice                 # IR blaster service
+com.sony.dtv.sonyloglevelsettingsys
+
+# ---------------------------------------------------------------------------------------
+# Deliberately KEPT ENABLED (not read by tv.sh): reported to break things, or undocumented.
+#
+# Background: with these 21 disabled as well (126 in total), YouTube's hardware AV1 decoder
+# produced corrupted frames at a scene cut (GW5bAVgULEA at 7:49, old scene leaking into the
+# new one); software decoders decoded the same frame cleanly, and with these enabled the TV
+# did too. Never pinned to one package. (Bravias also have a known decoder bug on resolution
+# switches with no debloat at all: github.com/google/ExoPlayer/issues/7248.)
+#
+#   Reported to break things when disabled:
+#     com.google.android.tungsten.setupwraith   Sony volume control and sound settings (UAD)
+#     com.android.certinstaller                 Wi-Fi (UAD: unsafe)
+#     com.android.localtransport                backup transport (UAD: unsafe)
+#     com.android.statementservice              app-link verification (UAD: unsafe); crashes at boot anyway (known Android 12 issue)
+#     com.android.dynsystem                     dynamic system updates (UAD: unsafe/expert)
+#     com.android.settings.intelligence         Settings crashes on search (UAD)
+#     com.sony.dtv.ecodashboard                 some Settings options (UAD)
+#     com.android.htmlviewer                    bootloops on some devices (UAD)
+#     com.android.backupconfirm                 adb backup (UAD)
+#   No public information:
+#     com.sony.dtv.sensingfusionservice  com.sony.dtv.quicksetup  com.sony.dtv.QuickSetupCustomizer
+#     com.sony.dtv.eulaviewer  com.sony.dtv.hrtfsettings  com.sony.dtv.acousticautocalibration
+#     com.sony.dtv.tvpositionscreen  com.sony.dtv.hddmgr  com.sony.dtv.usbmsgservice
+#     com.sony.dtv.browser.webappplatform  com.sony.dtv.browser.webappruntimeextension
+#     com.mediatek.dmagent (crashes at every boot regardless: parses "emulated;0" as a number)

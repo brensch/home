@@ -8,6 +8,9 @@
 #                           update or factory reset; safe to re-run)
 #   tv.sh enable-updates    turn the [updates] group back on (see README.md)
 #   tv.sh disable-updates   turn it off again
+#   tv.sh enable-all        turn everything in packages.txt back on (stock TV; 'apply' undoes)
+#   tv.sh enable <group>    turn any one group from packages.txt back on (testing)
+#   tv.sh disable <group>   and off again
 #   tv.sh adb <args...>     any adb command, e.g.  tv.sh adb shell pm enable <pkg>
 set -euo pipefail
 TV=192.168.1.14:5555
@@ -45,8 +48,15 @@ case "${1:-}" in
   apply)           out=$(set_state off $(packages))
                    grep -v 'new state: disabled-user' <<<"$out" || true
                    echo "disabled: $(grep -c 'new state: disabled-user' <<<"$out") of $(packages | wc -l)" ;;
+  enable-all)      out=$(set_state on $(packages))
+                   grep -v 'new state: enabled' <<<"$out" || true
+                   echo "enabled: $(grep -c 'new state: enabled' <<<"$out") of $(packages | wc -l)" ;;
   enable-updates)  set_state on $(packages updates) ;;
   disable-updates) set_state off $(packages updates) ;;
+  enable)          [ -n "${2:-}" ] && [ -n "$(packages "$2")" ] || { echo "no such group: ${2:-}"; exit 1; }
+                   set_state on $(packages "$2") ;;
+  disable)         [ -n "${2:-}" ] && [ -n "$(packages "$2")" ] || { echo "no such group: ${2:-}"; exit 1; }
+                   set_state off $(packages "$2") ;;
   adb)             shift; adb "$@" ;;
-  *)               sed -n '2,13p' "$0"; exit 1 ;;
+  *)               sed -n '2,16p' "$0"; exit 1 ;;
 esac
