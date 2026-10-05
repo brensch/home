@@ -393,7 +393,7 @@
   mode: single
 - id: kitchen_off_when_tv_plays
   alias: Kitchen off when the TV plays
-  description: The moment the TV starts or resumes playing, turn the kitchen lights off with no fade.
+  description: When the TV starts or resumes playing video, fade the kitchen lights and the desk Lines off.
   # media_player.tv_cast (Google Cast) pushes playing/paused for YouTube and other
   # Cast-based apps, including ones opened with the TV remote. Android TV Remote
   # (media_player.tv) only knows which app is open, not whether it's playing.
@@ -404,10 +404,16 @@
     not_from:
     - unknown
     - unavailable
+  conditions:
+  # Music (Spotify etc. over Cast) isn't a reason to darken the kitchen.
+  - condition: template
+    value_template: "{{ state_attr('media_player.tv_cast', 'media_content_type') != 'music' }}"
   actions:
   - action: light.turn_off
     target:
-      entity_id: light.kitchen_all
+      entity_id:
+      - light.kitchen_all
+      - light.lines_desk
     data:
-      transition: 0
+      transition: 10
   mode: single
