@@ -79,3 +79,11 @@ input_datetime:
     name: Server heartbeat
     has_date: true
     has_time: true
+
+# Lights flashed by script.flash_lights while they were off. They remember the
+# flash colour, so the "Restore look after a flash" automation puts their own
+# look back the next time each one is turned on.
+input_text:
+  flash_pending:
+    name: Lights to restore after a flash
+    max: 255

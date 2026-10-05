@@ -60,6 +60,7 @@ flash_lights:
     - variables:
         was_off: "{{ bulbs | select('is_state', 'off') | list }}"
         was_on: "{{ bulbs | reject('in', was_off) | list }}"
+    # Lights that are on: remember them, then fade to black.
     - if:
       - "{{ was_on | count > 0 }}"
       then:
@@ -67,42 +68,29 @@ flash_lights:
         data:
           scene_id: flash_lights_before
           snapshot_entities: "{{ was_on }}"
+      - action: light.turn_off
+        target:
+          entity_id: "{{ was_on }}"
+        data:
+          transition: 1
+      - delay: 1
+    # Fade up to the colour, hold, fade to black.
     - action: light.turn_on
       target:
         entity_id: "{{ bulbs }}"
       data:
         rgb_color: "{{ color }}"
         brightness_pct: 100
-        transition: 0
+        transition: 1
     - delay:
-        seconds: "{{ hold | default(2) }}"
-    # Lights that were off: bulbs remember the last colour they showed and can't
-    # take a new one while off, so show each its own saved colour for an instant
-    # (from the "Remember lights' last colour" automation; warm white failing
-    # that) and turn it off again. A plain off, no transition: Nanoleaf turns
-    # off with any transition by zeroing brightness, which it then forgets.
-    - repeat:
-        for_each: "{{ was_off }}"
-        sequence:
-        - variables:
-            saved: "scene.last_on_{{ repeat.item | replace('.', '_') }}"
-        - if:
-          - "{{ saved in states.scene | map(attribute='entity_id') | list }}"
-          then:
-          - action: scene.turn_on
-            target:
-              entity_id: "{{ saved }}"
-          else:
-          - action: light.turn_on
-            target:
-              entity_id: "{{ repeat.item }}"
-            data:
-              color_temp_kelvin: 2700
-              brightness_pct: 100
-        - action: light.turn_off
-          target:
-            entity_id: "{{ repeat.item }}"
-    # Lights that were on go back exactly as they were.
+        seconds: "{{ 1 + hold | default(2) | int }}"
+    - action: light.turn_off
+      target:
+        entity_id: "{{ bulbs }}"
+      data:
+        transition: 1
+    - delay: 1
+    # Lights that were on fade back up to exactly how they were.
     - if:
       - "{{ was_on | count > 0 }}"
       then:
@@ -111,3 +99,15 @@ flash_lights:
           entity_id: scene.flash_lights_before
         data:
           transition: 1
+    # Lights that were off stay off. They now remember the flash colour, so mark
+    # them; "Restore look after a flash" puts their own look back the next time
+    # they're turned on.
+    - if:
+      - "{{ was_off | count > 0 }}"
+      then:
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.flash_pending
+        data:
+          value: >
+            {{ (states('input_text.flash_pending').split(',') | select | list + was_off) | unique | join(',') }}
