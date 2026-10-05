@@ -57,24 +57,20 @@ flash_lights:
           {% endfor %}
           {{ ns.out | unique | list }}
     - condition: "{{ bulbs | count > 0 }}"
-    - variables:
-        was_off: "{{ bulbs | select('is_state', 'off') | list }}"
-        was_on: "{{ bulbs | reject('in', was_off) | list }}"
-    # Lights that are on: remember them, then fade to black.
-    - if:
-      - "{{ was_on | count > 0 }}"
-      then:
-      - action: scene.create
-        data:
-          scene_id: flash_lights_before
-          snapshot_entities: "{{ was_on }}"
-      - action: light.turn_off
-        target:
-          entity_id: "{{ was_on }}"
-        data:
-          transition: 1
-      - delay: 1
-    # Fade up to the colour, hold, fade to black.
+    # Save each bulb's true state from the device (colour and brightness, and
+    # for lights that are off, what they'll come back on as).
+    - action: shell_command.light_memory
+      data:
+        args: "save flash {{ bulbs | join(' ') }}"
+      response_variable: saved
+    - condition: "{{ saved.returncode == 0 }}"
+    # Fade to black, up to the colour, hold, back to black. The fades to black
+    # go straight to the devices: HA's Hue integration pins the brightness of a
+    # bulb it fades off and forces it on the next plain turn-on.
+    - action: shell_command.light_memory
+      data:
+        args: "off {{ bulbs | join(' ') }} --fade 1"
+    - delay: 1
     - action: light.turn_on
       target:
         entity_id: "{{ bulbs }}"
@@ -84,30 +80,21 @@ flash_lights:
         transition: 1
     - delay:
         seconds: "{{ 1 + hold | default(2) | int }}"
-    - action: light.turn_off
-      target:
-        entity_id: "{{ bulbs }}"
+    - action: shell_command.light_memory
       data:
-        transition: 1
+        args: "off {{ bulbs | join(' ') }} --fade 1"
     - delay: 1
-    # Lights that were on fade back up to exactly how they were.
+    # Put every bulb back as saved: lights that were on fade up to it, lights
+    # that were off get their colour back while staying off.
+    - action: shell_command.light_memory
+      data:
+        args: "restore flash --fade 1"
+      response_variable: restored
     - if:
-      - "{{ was_on | count > 0 }}"
+      - "{{ restored.returncode != 0 }}"
       then:
-      - action: scene.turn_on
-        target:
-          entity_id: scene.flash_lights_before
+      - action: system_log.write
         data:
-          transition: 1
-    # Lights that were off stay off. They now remember the flash colour, so mark
-    # them; "Restore look after a flash" puts their own look back the next time
-    # they're turned on.
-    - if:
-      - "{{ was_off | count > 0 }}"
-      then:
-      - action: input_text.set_value
-        target:
-          entity_id: input_text.flash_pending
-        data:
-          value: >
-            {{ (states('input_text.flash_pending').split(',') | select | list + was_off) | unique | join(',') }}
+          level: error
+          logger: script.flash_lights
+          message: "light_memory restore: {{ restored.stderr }}"

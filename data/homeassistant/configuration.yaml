@@ -80,10 +80,8 @@ input_datetime:
     has_date: true
     has_time: true
 
-# Lights flashed by script.flash_lights while they were off. They remember the
-# flash colour, so the "Restore look after a flash" automation puts their own
-# look back the next time each one is turned on.
-input_text:
-  flash_pending:
-    name: Lights to restore after a flash
-    max: 255
+# Saves lights' real state from the devices and writes it back, including a
+# colour for a light that stays off (HA's light services can't do that). Used by
+# script.flash_lights; see tools/light_memory.py and its tests.
+shell_command:
+  light_memory: "python3 /config/tools/light_memory.py {{ args }}"

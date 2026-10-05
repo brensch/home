@@ -23,3 +23,6 @@ venv/
 
 # Home Assistant runtime state that happens to be YAML (banned client IPs)
 data/homeassistant/ip_bans.yaml
+
+# Python tools that HA runs (shell_command) and their tests
+!data/homeassistant/tools/*.py
