@@ -308,32 +308,39 @@
   mode: single
 - id: movie_mode
   alias: Movie mode
-  description: After dark, a video app or input on the TV dims the living room; the home screen or music puts the lights back; TV off turns the room on.
+  description: After dark, a video app or input on the TV dims the living room; the home screen or music puts the lights back as they were; TV off sets the living room to normal (Bright) right away.
   # media_player.tv (Android TV Remote) pushes power and the foreground app the
-  # moment they change. The 5s settle keeps flicking between apps from strobing.
+  # moment they change. TV off reacts instantly; app changes settle for 3 s so
+  # flicking between apps doesn't strobe the room.
   triggers:
   - trigger: state
     entity_id: media_player.tv
+    to: 'off'
     not_from:
     - unknown
     - unavailable
-    for: 00:00:05
+    id: tv_off
   - trigger: state
     entity_id: media_player.tv
     attribute: app_id
-    for: 00:00:05
-  variables:
-    # Apps that are on the TV but aren't something to dim the room for.
-    not_watching:
-    - com.google.android.tvlauncher
-    - com.google.android.apps.tv.launcherx
-    - com.android.tv.settings
-    - com.spotify.tv.android
-    watching: >
-      {{ is_state('media_player.tv', 'on')
-         and state_attr('media_player.tv', 'app_id') not in not_watching }}
-    dimmed: "{{ 'scene.movie_mode_before' in states.scene | map(attribute='entity_id') | list }}"
+    for: 00:00:03
+    id: app
   actions:
+  # Decide from the state *now*, not at trigger time: TV off fires both
+  # triggers, and the second run must see that the first already restored.
+  - variables:
+      not_watching:
+      - com.google.android.tvlauncher
+      - com.google.android.apps.tv.launcherx
+      - com.android.tv.settings
+      - com.spotify.tv.android
+      watching: >
+        {{ is_state('media_player.tv', 'on')
+           and state_attr('media_player.tv', 'app_id') not in not_watching }}
+      dimmed: "{{ is_state('input_boolean.movie_dimmed', 'on') }}"
+      room: >
+        {{ (state_attr('light.living_room', 'entity_id') | list + ['light.lines_desk'])
+           | select('has_value') | list }}
   - choose:
     - conditions:
       - "{{ watching and not dimmed }}"
@@ -344,20 +351,21 @@
         entity_id: light.living_room
         state: 'on'
       sequence:
-      - action: scene.create
+      # Save the room's real look on the devices (survives HA restarts), then dim.
+      - action: shell_command.light_memory
         data:
-          scene_id: movie_mode_before
-          snapshot_entities: >
-            {{ (state_attr('light.living_room', 'entity_id') | list
-                + ['light.lines_desk', 'light.tree', 'light.garland'])
-               | select('has_value') | list }}
+          args: "save movie {{ room | join(' ') }}"
+      - action: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.movie_dimmed
       - action: scene.turn_on
         target:
           entity_id: scene.living_room_dimmed
         data:
           transition: 2
-    # TV off after dark: the room comes back on. If movie mode dimmed it, that
-    # means exactly as it was before the film; otherwise just turn the room on.
+    # TV off after dark: the living room goes to its normal look, Hue's
+    # "Bright" (100%, 2732 K). Not the saved pre-film look: that can be wrong
+    # (it once saved the room at 1%), and TV off means "lights up, back to normal".
     - conditions:
       - condition: state
         entity_id: media_player.tv
@@ -366,41 +374,30 @@
         entity_id: sun.sun
         state: below_horizon
       sequence:
-      - if:
-        - "{{ dimmed }}"
-        then:
-        - action: scene.turn_on
-          target:
-            entity_id: scene.movie_mode_before
-          data:
-            transition: 2
-        - action: scene.delete
-          target:
-            entity_id: scene.movie_mode_before
-        else:
-        # No transition: with one and no brightness, HA's Nanoleaf integration
-        # sets the Lines to 100% instead of their own brightness.
-        - action: light.turn_on
-          target:
-            entity_id: light.living_room_all
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.movie_dimmed
+      - action: scene.turn_on
+        target:
+          entity_id: scene.living_room_bright
+        data:
+          transition: 1
     # Back to the home screen or music with the TV still on.
     - conditions:
-      - "{{ not watching and dimmed }}"
+      - "{{ not watching and dimmed and is_state('media_player.tv', 'on') }}"
       sequence:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.movie_dimmed
       # If someone turned the room off during the film, don't light it back up.
       - if:
         - condition: state
           entity_id: light.living_room
           state: 'on'
         then:
-        - action: scene.turn_on
-          target:
-            entity_id: scene.movie_mode_before
+        - action: shell_command.light_memory
           data:
-            transition: 2
-      - action: scene.delete
-        target:
-          entity_id: scene.movie_mode_before
+            args: restore movie --fade 1
   mode: queued
 - id: balcony_motion_light
   alias: Balcony motion light

@@ -41,6 +41,15 @@ google_assistant:
   project_id: passenger-princess-protector
   service_account: !include SERVICE_ACCOUNT.json
   report_state: true # This allows syncing the state with Google Home
+  # Plugs whose power must not be cut by voice ("turn off everything"):
+  # media powers this server, fridge the fridge, desk the PC and Mac mini.
+  entity_config:
+    switch.media_relay:
+      expose: false
+    switch.fridge_relay:
+      expose: false
+    switch.desk_relay:
+      expose: false
   expose_by_default: true # Temporarily expose all entities to test
   exposed_domains:
     - switch
@@ -87,7 +96,7 @@ shell_command:
   light_memory: "python3 /config/tools/light_memory.py {{ args }}"
 
 # Dashboards defined as YAML in git (dashboards/), one job each:
-#   Home = daily command center (default); Rooms = every bulb and scene;
+#   Home = daily command center (default);
 #   System = upkeep, automations, plug power and live draw; usage and cost are
 #   on HA's built-in Energy dashboard;
 #   Demo = card styles to choose from. The old storage Overview is hidden.
@@ -99,12 +108,6 @@ lovelace:
       icon: mdi:home
       show_in_sidebar: true
       filename: dashboards/home.yaml
-    rooms-dash:
-      mode: yaml
-      title: Rooms
-      icon: mdi:floor-plan
-      show_in_sidebar: true
-      filename: dashboards/rooms.yaml
     system-dash:
       mode: yaml
       title: System
@@ -118,3 +121,10 @@ lovelace:
       icon: mdi:palette-swatch
       show_in_sidebar: true
       filename: dashboards/demo.yaml
+
+# On while movie mode has the living room dimmed; its pre-film look is saved on
+# the devices by light_memory (survives restarts, unlike scene.create).
+input_boolean:
+  movie_dimmed:
+    name: Movie mode has the living room dimmed
+    icon: mdi:movie-open

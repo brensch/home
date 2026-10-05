@@ -161,14 +161,18 @@ class Nanoleaf:
             state["sat"] = s["sat"]["value"]
         return state
 
-    def bodies(self, saved, fade):
-        """The (path, body) PUTs that put a panel back as saved."""
+    def bodies(self, saved, fade, on_now=False):
+        """The (path, body) PUTs that put a panel back as saved. on_now: the
+        panel is lit at the moment, so fade from where it is rather than from
+        black (going via brightness 1 would show as a dip)."""
         if saved["on"]:
             level = {"brightness": {"value": saved["brightness"], "duration": int(fade)}}
             if "effect" in saved:
                 return [("/effects", {"select": saved["effect"]}), ("/state", level)]
             colour = {"ct": {"value": saved["ct"]}} if "ct" in saved else {
                 "hue": {"value": saved["hue"]}, "sat": {"value": saved["sat"]}}
+            if on_now:
+                return [("/state", colour), ("/state", level)]
             # Come up from (nearly) dark in the saved colour, then fade to level.
             return [("/state", {**colour, "brightness": {"value": 1}}), ("/state", level)]
         # Off: the panel can't take a colour while off without lighting up at its
@@ -186,7 +190,8 @@ class Nanoleaf:
         return steps
 
     def write(self, saved, fade):
-        for path, body in self.bodies(saved, fade):
+        on_now = saved["on"] and self.read()["on"]
+        for path, body in self.bodies(saved, fade, on_now):
             self.http("PUT", self.base + path, body)
 
     def off_body(self, fade):

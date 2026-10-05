@@ -123,6 +123,13 @@ class NanoleafTests(unittest.TestCase):
             ("/state", {"brightness": {"value": 70, "duration": 1}}),
         ])
 
+    def test_restore_on_when_already_lit_fades_from_where_it_is(self):
+        # No detour via brightness 1: that dips a lit panel visibly.
+        bodies = lm.Nanoleaf("panel", "tok", FakeHttp({})).bodies(
+            {"on": True, "brightness": 70, "mode": "hs", "hue": 300, "sat": 60}, 1, on_now=True)
+        self.assertEqual(bodies, [("/state", {"hue": {"value": 300}, "sat": {"value": 60}}),
+                                  ("/state", {"brightness": {"value": 70, "duration": 1}})])
+
     def test_restore_off_sets_colour_while_black_then_switches_off(self):
         # A colour sent to a fully-off panel lights it at full brightness first.
         bodies = lm.Nanoleaf("panel", "tok", FakeHttp({})).bodies(

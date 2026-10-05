@@ -80,8 +80,6 @@ views:
           - type: heading
             heading: Rooms
             icon: mdi:floor-plan
-            # Tap the heading for every bulb and scene in each room.
-            tap_action: {action: navigate, navigation_path: /rooms-dash/rooms}
           # Built-in light dials, three to a row: tap the bulb for on/off, drag the ring to dim,
           # tap the name for options.
           - {type: light, entity: light.living_room_all, name: Living room, icon: mdi:sofa, grid_options: {columns: 4, rows: 3}}

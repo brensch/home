@@ -13,7 +13,7 @@ views:
             icon: mdi:alert-circle-outline
           # Lists only devices that are currently unreachable; empty is good.
           - type: entity-filter
-            card: {type: entities, title: Offline right now}
+            card: {type: entities, title: Offline right now, show_header_toggle: false}
             show_empty: true
             conditions:
               - condition: state
@@ -45,7 +45,7 @@ views:
               - media_player.tv
               - switch.fridge_relay
               - switch.desk_relay
-              - switch.media_relay
+              - sensor.media_power
               - switch.piano_relay
           - type: heading
             heading: Batteries
@@ -86,12 +86,8 @@ views:
           - type: heading
             heading: Plug power
             icon: mdi:power-socket-us
-          # Every one asks first. Media powers this server; desk the PC and Mac mini.
-          - type: tile
-            entity: switch.media_relay
-            name: Home server
-            icon: mdi:server
-            tap_action: {action: toggle, confirmation: {text: "This plug powers the home server, including Home Assistant. Switch it?"}}
+          # Every one asks first. The server's own plug (media) deliberately has no
+          # switch here: switching it off would take this whole system down.
           - type: tile
             entity: switch.desk_relay
             name: Desk (PC + Mac mini)
