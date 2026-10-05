@@ -50,6 +50,7 @@
       - light.lines_kitchen
       - light.lines_desk
       color: '{{ color }}'
+      hold: 5
   - condition: state
     entity_id: sun.sun
     state: below_horizon
