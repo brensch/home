@@ -1,6 +1,6 @@
-# Card styles side by side, all built into HA (no add-ons), on the same few
-# entities. Pick letters and the real dashboards get restyled to match.
-# P-R: room-control layouts (big on/off, small options, slider), newest first.
+# Card styles side by side on the same few entities. Pick letters and the real
+# dashboards get restyled to match. S uses our own card (www/room-row-card.js);
+# P-R are built-in room-control layouts; A-N the built-in basics.
 views:
 - title: Demo
   path: demo
@@ -23,6 +23,22 @@ views:
     show_state: false
     color: amber
   sections:
+  - type: grid
+    cards:
+    - type: heading
+      heading: 'S — One line, all inside (custom card): name, bulb, slider, ⋮'
+    - type: custom:room-row-card
+      entity: light.living_room_all
+      name: Living room
+      icon: mdi:sofa
+    - type: custom:room-row-card
+      entity: light.kitchen_all
+      name: Kitchen
+      icon: mdi:countertop
+    - type: custom:room-row-card
+      entity: light.bedroom
+      name: Bedroom
+      icon: mdi:bed
   - type: grid
     cards:
     - type: heading

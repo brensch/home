@@ -144,3 +144,13 @@ mood_night:
     - action: scene.turn_on
       target:
         entity_id: scene.bedroom_nightlight
+
+# For the Home dashboard's slim "All off" row (a tile needs an entity to show).
+all_lights_off:
+  alias: All lights off
+  icon: mdi:power
+  mode: single
+  sequence:
+    - action: light.turn_off
+      target:
+        entity_id: all

@@ -92,6 +92,11 @@ shell_command:
 #   on HA's built-in Energy dashboard;
 #   Demo = card styles to choose from. The old storage Overview is hidden.
 lovelace:
+  # Custom cards live in www/ (served as /local/) and are declared here, in git.
+  resource_mode: yaml
+  resources:
+    - url: /local/room-row-card.js?v=1
+      type: module
   dashboards:
     home-dash:
       mode: yaml

@@ -26,3 +26,8 @@ data/homeassistant/ip_bans.yaml
 
 # Python tools that HA runs (shell_command) and their tests
 !data/homeassistant/tools/*.py
+!data/homeassistant/www/
+!data/homeassistant/www/*.js
+
+# Dashboard screenshots (tests/dashboard_shots.py output)
+tests/shots/

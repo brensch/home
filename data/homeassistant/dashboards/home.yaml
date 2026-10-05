@@ -27,6 +27,7 @@ views:
       - type: entity
         entity: switch.fridge_relay
         name: Fridge plug is OFF
+        show_name: true
         icon: mdi:fridge-alert
         color: red
         visibility:
@@ -36,6 +37,7 @@ views:
       - type: entity
         entity: sensor.front_door_switch_battery
         name: Front door switch battery
+        show_name: true
         color: red
         tap_action: {action: navigate, navigation_path: /system-dash/system}
         visibility:
@@ -45,6 +47,7 @@ views:
       - type: entity
         entity: sensor.kitchen_switch_battery
         name: Kitchen switch battery
+        show_name: true
         color: red
         tap_action: {action: navigate, navigation_path: /system-dash/system}
         visibility:
@@ -54,6 +57,7 @@ views:
       - type: entity
         entity: sensor.bedroom_switch_battery
         name: Bedroom switch battery
+        show_name: true
         color: red
         tap_action: {action: navigate, navigation_path: /system-dash/system}
         visibility:
@@ -63,6 +67,7 @@ views:
       - type: entity
         entity: sensor.hue_outdoor_motion_sensor_1_battery
         name: Outdoor sensor battery
+        show_name: true
         color: red
         tap_action: {action: navigate, navigation_path: /system-dash/system}
         visibility:
@@ -77,21 +82,23 @@ views:
             icon: mdi:floor-plan
             # Tap the heading for every bulb and scene in each room.
             tap_action: {action: navigate, navigation_path: /rooms-dash/rooms}
-          # Half-width dials: tap the dial's icon to toggle, drag to dim.
-          - {type: light, entity: light.living_room_all, name: Living room, grid_options: {columns: 6}}
-          - {type: light, entity: light.kitchen_all, name: Kitchen, grid_options: {columns: 6}}
-          - {type: light, entity: light.bedroom, name: Bedroom, grid_options: {columns: 6}}
-          - {type: light, entity: light.balcony, name: Balcony, grid_options: {columns: 6}}
-          - {type: light, entity: light.closet, name: Closet, grid_options: {columns: 6}}
-          - type: button
+          # One line per room (www/room-row-card.js): bulb = on/off, slider, ⋮ = options.
+          - {type: custom:room-row-card, entity: light.living_room_all, name: Living room, icon: mdi:sofa}
+          - {type: custom:room-row-card, entity: light.kitchen_all, name: Kitchen, icon: mdi:stove}
+          - {type: custom:room-row-card, entity: light.bedroom, name: Bedroom, icon: mdi:bed}
+          - {type: custom:room-row-card, entity: light.balcony, name: Balcony, icon: mdi:flower-tulip}
+          - {type: custom:room-row-card, entity: light.closet, name: Closet, icon: mdi:hanger}
+          - type: tile
+            entity: script.all_lights_off
             name: All off
             icon: mdi:power
-            tap_action:
+            hide_state: true
+            tap_action: &all_off
               action: perform-action
-              perform_action: light.turn_off
-              target: {entity_id: all}
+              perform_action: script.all_lights_off
               confirmation: {text: "Turn off every light in the house?"}
-            grid_options: {columns: 6}
+            icon_tap_action: *all_off
+            grid_options: {columns: 12, rows: 1}
       - type: grid
         cards:
           - type: heading
