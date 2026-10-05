@@ -1,0 +1,97 @@
+# Packages disabled on the Sony Bravia (XBR-75X900H / "BRAVIA VH1", Android TV 12).
+# One per line; "[group]" lines start a group. tv.sh reads this file.
+# Disabled with `pm disable-user --user 0`, never uninstalled: `tv.sh adb pm enable <pkg>` undoes one.
+
+[updates]
+# Everything that updates the TV or its apps. tv.sh enable-updates / disable-updates toggle just this group.
+com.android.vending                     # Google Play Store (app updates)
+com.sony.dtv.systemupdate               # Sony firmware updater
+com.sony.dtv.update
+com.sony.dtv.otaurlprovisioning         # where the firmware updater looks for updates
+com.sony.dtv.upgradesetup
+com.sony.dtv.notificationcenter         # Sony notifications, incl. "update available"
+
+[launcher]
+com.google.android.tvlauncher           # Google home screen; Projectivy (com.spocky.projengmenu) is home instead
+com.google.android.tvrecommendations    # recommendation rows for that launcher
+
+[tracking]
+tv.samba.ssm                            # Samba TV: recognises what's on screen, sells it to advertisers
+tv.samba.ssm.ui
+com.sonyericsson.idd.agent              # Sony usage-data collection
+com.qterics.da.product                  # Qterics device analytics
+
+[promos-and-demo]
+com.sony.dtv.promos
+com.sony.dtv.sonyselect
+com.sony.dtv.demosupport
+com.sony.dtv.demosystemsupport
+com.sony.dtv.multiscreendemo
+
+[unused-apps]
+com.google.android.feedback
+com.google.android.play.games
+com.google.android.videos
+com.netflix.ninja
+com.netflix.partner.ncm
+com.amazon.amazonvideo.livingroom       # Prime Video
+com.apple.atve.sony.appletv             # Apple TV app (AirPlay is separate and stays)
+com.disney.disneyplus
+com.google.android.youtube.tvmusic
+
+[voice]
+com.google.android.katniss              # Google Assistant / voice search
+com.sony.dtv.voicesearch
+com.sony.dtv.assistantadapter
+com.sony.dtv.voicerecognitionconfirmation
+
+[antenna-irbox-dlna]
+com.sony.dtv.tvinput.atsc3tuner         # ATSC 3.0 antenna tuner (basic tuner kept: the TV app needs it)
+com.sony.dtv.tvinput.atsc3tuner.drmlicenseinstaller
+com.sony.dtv.interactivetvutil
+com.sony.dtv.interactivetvutil.output
+com.sony.dtv.citool                     # CI card
+com.uei.quicksetsdk.sony                # IR control of a cable/satellite box
+com.sony.dtv.irblaster
+com.sony.dtv.irbservice
+com.sony.dtv.homenetwork                # DLNA
+com.sony.huey.dlna.module
+com.sony.huey.dlna.renderersettings
+com.sonyericsson.dlna
+
+[sony-cloud-and-web]
+com.sony.dtv.seeds.iot                  # Sony cloud: Alexa/Google smart-home link, remote start via Sony apps
+com.sony.dtv.seeds.iot.remotestart
+com.sony.dtv.webapi.core                # Sony network control API (old Bravia integration)
+com.vewd.core.service                   # Vewd / Opera TV web runtime
+com.sony.dtv.browser.webappplatform
+com.sony.dtv.browser.webappruntime
+com.sony.dtv.browser.webappruntimeextension
+com.sony.dtv.browser.webappservice
+
+[no-camera]
+com.sony.dtv.gestureapp
+com.sony.dtv.sensingfusionservice
+com.sony.dtv.sensingcamera.settings
+com.sony.dtv.sensingcamera.fwupdate
+com.sony.dtv.distancealert
+
+[hotel-and-pro]
+com.sony.dtv.b2b.rs232csupport
+com.sony.dtv.b2b.vendorprotocol
+com.sony.dtv.b2b.hotelmode
+com.sony.dtv.b2b.prosettings
+com.sony.dtv.b2b.importexport
+
+[extras]
+com.sony.dtv.customersupport
+com.sony.dtv.smarthelp
+com.sony.dtv.helpguidecontents
+com.sony.dtv.privacypolicy
+com.sony.dtv.smarthomesettings
+com.sony.dtv.accessibility.tutorial
+com.google.android.marvin.talkback
+com.google.android.tts
+com.google.android.backdrop             # ambient-mode photos
+com.android.printspooler
+com.google.android.syncadapters.calendar
