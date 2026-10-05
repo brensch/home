@@ -5,13 +5,13 @@ blueprint:
     then leave them on in a warm cream colour.
   domain: automation
   input:
-    arrival_tracker:
-      name: Person device tracker
-      description: The device_tracker whose arrival triggers the flash.
+    arrival_person:
+      name: Person
+      description: The person whose arrival home triggers the flash.
       selector:
         entity:
           filter:
-            domain: device_tracker
+            domain: person
     flash_lights:
       name: Lights to flash
       description: Light(s) or group(s) to blink and then leave on.
@@ -72,10 +72,14 @@ variables:
   lock_entity: !input flash_lock
 
 triggers:
-  - trigger: zone
-    entity_id: !input arrival_tracker
-    zone: zone.home
-    event: enter
+  # A person, not a phone, so a new phone only means updating the person.
+  # not_from keeps an HA restart (unknown/unavailable -> home) from flashing.
+  - trigger: state
+    entity_id: !input arrival_person
+    to: home
+    not_from:
+      - unknown
+      - unavailable
 
 conditions: []
 

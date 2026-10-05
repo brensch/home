@@ -1,28 +1,15 @@
 - id: '1754677598257'
   alias: 'Turn off lights when we leave '
-  description: 'When leave, and Brend/alyssa aren’t home, turn off lights. '
+  description: When the last person leaves home, turn off the lights.
+  # zone.home's state is how many people are home; 0 means the last of us left.
   triggers:
-  - trigger: zone
-    entity_id: device_tracker.alyssas_iphone
-    zone: zone.home
-    event: leave
-  - trigger: zone
-    entity_id: device_tracker.brend_phone
-    zone: zone.home
-    event: leave
-  conditions:
-  - condition: and
-    conditions:
-    - condition: device
-      device_id: 434124680b8b5c3e1439dde1a2c1eee6
-      domain: device_tracker
-      entity_id: c0965c200253fa8dfcd703714d1f01cd
-      type: is_not_home
-    - condition: device
-      device_id: e60320af7226271d8a3213cc70eaa562
-      domain: device_tracker
-      entity_id: a0be8c34ed56057230de3dc68ec34251
-      type: is_not_home
+  - trigger: state
+    entity_id: zone.home
+    to: '0'
+    not_from:
+    - unknown
+    - unavailable
+  conditions: []
   actions:
   - action: light.turn_off
     metadata: {}
@@ -40,7 +27,7 @@
   use_blueprint:
     path: brensch/arrival_flash.yaml
     input:
-      arrival_tracker: device_tracker.alyssas_iphone
+      arrival_person: person.alyssa
       flash_color:
       - 0
       - 255
@@ -54,7 +41,7 @@
   use_blueprint:
     path: brensch/arrival_flash.yaml
     input:
-      arrival_tracker: device_tracker.brend_phone
+      arrival_person: person.brend
       flash_color:
       - 255
       - 0
