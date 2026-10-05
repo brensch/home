@@ -38,6 +38,17 @@ blueprint:
         target:
           entity:
             domain: light
+    on_brightness_pct:
+      name: Turn-on brightness
+      description: >
+        Brightness the toggle button turns the room on at. 0 keeps each
+        light's remembered brightness.
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: '%'
     step_pct:
       name: Brightness step
       description: Percent brightness change per up/down event.
@@ -54,6 +65,8 @@ max_exceeded: silent
 
 variables:
   step: !input step_pct
+  on_brightness: !input on_brightness_pct
+  room: !input room_lights
 
 triggers:
   - trigger: state
@@ -85,8 +98,27 @@ actions:
           - condition: template
             value_template: "{{ trigger.to_state.attributes.event_type == 'initial_press' }}"
         sequence:
-          - action: light.toggle
-            target: !input room_lights
+          # Same as light.toggle on a group (any light on -> all off), but
+          # turning on can force a brightness instead of the remembered one.
+          - if:
+              - condition: template
+                value_template: >
+                  {{ expand(room.entity_id) | selectattr('state', 'eq', 'on') | list | count > 0 }}
+            then:
+              - action: light.turn_off
+                target: !input room_lights
+            else:
+              - if:
+                  - condition: template
+                    value_template: "{{ on_brightness | int > 0 }}"
+                then:
+                  - action: light.turn_on
+                    target: !input room_lights
+                    data:
+                      brightness_pct: "{{ on_brightness | int }}"
+                else:
+                  - action: light.turn_on
+                    target: !input room_lights
       - conditions:
           - condition: trigger
             id: up

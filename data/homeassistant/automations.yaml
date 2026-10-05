@@ -134,6 +134,7 @@
       button_down: event.kitchen_switch_button_3
       room_lights:
         entity_id: light.kitchen_all
+      on_brightness_pct: 100
 - id: '1800000000002'
   alias: Living Room dimmer
   use_blueprint:
@@ -430,7 +431,7 @@
   mode: single
 - id: kitchen_off_when_tv_plays
   alias: Kitchen off when the TV plays
-  description: When the TV starts or resumes playing video, fade the kitchen lights and the desk Lines off.
+  description: When the TV starts or resumes playing video, fade the kitchen lights and the desk Lines off over 5 seconds.
   # media_player.tv_cast (Google Cast) pushes playing/paused for YouTube and other
   # Cast-based apps, including ones opened with the TV remote. Android TV Remote
   # (media_player.tv) only knows which app is open, not whether it's playing.
@@ -448,9 +449,19 @@
   actions:
   - action: light.turn_off
     target:
-      entity_id:
-      - light.kitchen_all
-      - light.lines_desk
+      entity_id: light.lines_desk
     data:
-      transition: 10
+      transition: 5
+  # Someone used the kitchen switch in the last 10 minutes: they're probably in
+  # there (e.g. the show got resumed while they were up), so leave it lit.
+  - if:
+    - condition: template
+      value_template: >
+        {{ now() - states.event.kitchen_switch_button_1.last_changed > timedelta(minutes=10) }}
+    then:
+    - action: light.turn_off
+      target:
+        entity_id: light.kitchen_all
+      data:
+        transition: 5
   mode: single
