@@ -24,7 +24,7 @@
   mode: single
 - id: arrival_flash
   alias: Arrival flash
-  description: Flash the kitchen and living room in the arriver's colour, then put the lights back.
+  description: Flash both Lines in the arriver's colour, then (after dark) turn the living room on.
   # not_from keeps an HA restart (unknown/unavailable -> home) from flashing.
   triggers:
   - trigger: state
@@ -34,7 +34,7 @@
     - unknown
     - unavailable
     variables:
-      color: [0, 255, 0]
+      color: [0, 255, 200]    # aqua
   - trigger: state
     entity_id: person.brend
     to: home
@@ -42,14 +42,22 @@
     - unknown
     - unavailable
     variables:
-      color: [255, 0, 0]
+      color: [255, 110, 0]    # orange
   actions:
   - action: script.flash_lights
     data:
       lights:
-      - light.kitchen_all
-      - light.living_room_all
+      - light.lines_kitchen
+      - light.lines_desk
       color: '{{ color }}'
+  - condition: state
+    entity_id: sun.sun
+    state: below_horizon
+  - action: light.turn_on
+    target:
+      entity_id: light.living_room_all
+    data:
+      transition: 2
   # flash_lights queues overlapping calls itself; parallel just hands them over.
   mode: parallel
 - id: '1755761528874'
