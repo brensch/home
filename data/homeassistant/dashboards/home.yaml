@@ -9,8 +9,14 @@ views:
     badges:
       - type: entity
         entity: person.brend
+        name: Brend
+        show_name: true
+        show_state: true
       - type: entity
         entity: person.alyssa
+        name: Alyssa
+        show_name: true
+        show_state: true
       - type: entity
         entity: weather.forecast_home
       - type: entity
@@ -69,57 +75,14 @@ views:
           - type: heading
             heading: Rooms
             icon: mdi:floor-plan
-            # Tap the heading for every bulb and scene; hold a room tile likewise.
+            # Tap the heading for every bulb and scene in each room.
             tap_action: {action: navigate, navigation_path: /rooms-dash/rooms}
-          - type: tile
-            entity: light.living_room_all
-            name: Living room
-            icon: mdi:sofa
-            features_position: bottom
-            features: [{type: light-brightness}]
-            hold_action: {action: navigate, navigation_path: /rooms-dash/rooms}
-          - type: tile
-            entity: light.kitchen_all
-            name: Kitchen
-            icon: mdi:countertop
-            features_position: bottom
-            features: [{type: light-brightness}]
-            hold_action: {action: navigate, navigation_path: /rooms-dash/rooms}
-          - type: tile
-            entity: light.bedroom
-            name: Bedroom
-            icon: mdi:bed
-            features_position: bottom
-            features: [{type: light-brightness}]
-            hold_action: {action: navigate, navigation_path: /rooms-dash/rooms}
-          - type: tile
-            entity: light.balcony
-            name: Balcony
-            icon: mdi:flower-tulip
-          - type: tile
-            entity: light.closet
-            name: Closet
-            icon: mdi:hanger
-      - type: grid
-        cards:
-          - type: heading
-            heading: Moods
-            icon: mdi:palette
-          - type: button
-            name: Bright
-            icon: mdi:white-balance-sunny
-            tap_action: {action: perform-action, perform_action: script.mood_bright}
-            grid_options: {columns: 3, rows: 2}
-          - type: button
-            name: Evening
-            icon: mdi:weather-sunset
-            tap_action: {action: perform-action, perform_action: script.mood_evening}
-            grid_options: {columns: 3, rows: 2}
-          - type: button
-            name: Night
-            icon: mdi:weather-night
-            tap_action: {action: perform-action, perform_action: script.mood_night}
-            grid_options: {columns: 3, rows: 2}
+          # Half-width dials: tap the dial's icon to toggle, drag to dim.
+          - {type: light, entity: light.living_room_all, name: Living room, grid_options: {columns: 6}}
+          - {type: light, entity: light.kitchen_all, name: Kitchen, grid_options: {columns: 6}}
+          - {type: light, entity: light.bedroom, name: Bedroom, grid_options: {columns: 6}}
+          - {type: light, entity: light.balcony, name: Balcony, grid_options: {columns: 6}}
+          - {type: light, entity: light.closet, name: Closet, grid_options: {columns: 6}}
           - type: button
             name: All off
             icon: mdi:power
@@ -128,10 +91,11 @@ views:
               perform_action: light.turn_off
               target: {entity_id: all}
               confirmation: {text: "Turn off every light in the house?"}
-            grid_options: {columns: 3, rows: 2}
+            grid_options: {columns: 6}
+      - type: grid
+        cards:
           - type: heading
             heading: TV
-            heading_style: subtitle
             icon: mdi:television
           - type: tile
             entity: media_player.tv
@@ -164,6 +128,3 @@ views:
             name: Bill forecast
             icon: mdi:cash-clock
             tap_action: {action: navigate, navigation_path: /energy}
-          - type: todo-list
-            entity: todo.shopping_list
-            title: Shopping list
