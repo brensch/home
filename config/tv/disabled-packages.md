@@ -29,7 +29,21 @@ ADB: Developer options → USB debugging on the TV, then from the server
 | com.google.android.youtube.tvmusic | YouTube Music (unused) |
 | com.google.android.katniss | Google app: Assistant and voice search on the remote's mic button |
 
+| com.sony.dtv.tvinput.atsc3tuner, …atsc3tuner.drmlicenseinstaller | ATSC 3.0 (NextGen) antenna tuner — no antenna |
+| com.sony.dtv.interactivetvutil, …interactivetvutil.output | Interactive broadcast TV helpers — no antenna |
+| com.uei.quicksetsdk.sony | UEI QuickSet: IR control of a cable/satellite box — none |
+| com.sony.dtv.homenetwork, com.sony.huey.dlna.module, com.sony.huey.dlna.renderersettings, com.sonyericsson.dlna | DLNA home-network media server browsing and renderer — unused |
+
 Kept as apps: YouTube, YouTube TV, Stremio, Rumble, Spotify (and Projectivy).
+
+## Why (performance)
+
+The TV has 3 GB RAM. With everything resident it had ~380 MB available and swap
+100% full, so Android kept killing and relaunching apps (the sluggishness); CPU
+was mostly idle. Closing the Play Store and Settings left open in the background
+(force-stop, not disabled) brought it to ~550 MB, and disabling the antenna,
+IR-box and DLNA extras to ~580 MB. The basic tuner (com.sony.dtv.tvinput.tuner)
+stays: Sony's input app (tvx) expects it. HDMI inputs HW1-HW5 were checked after.
 
 Already disabled by Sony: com.sony.dtv.homekit, com.sony.dtv.livingfit, com.sony.dtv.b2b.softap.
 
