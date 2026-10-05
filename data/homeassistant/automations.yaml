@@ -295,27 +295,35 @@
   mode: single
 - id: movie_mode
   alias: Movie mode
-  description: TV on after dark dims the living room; TV off puts the lights back as they were.
+  description: After dark, a video app or input on the TV dims the living room; back to the home screen, music, or TV off puts the lights back.
+  # media_player.tv (Android TV Remote) pushes power and the foreground app the
+  # moment they change. The 5s settle keeps flicking between apps from strobing.
   triggers:
   - trigger: state
-    entity_id: media_player.sony_xbr_75x900h
-    to: 'on'
+    entity_id: media_player.tv
     not_from:
     - unknown
     - unavailable
-    for: 00:00:10
-    id: tv_on
+    for: 00:00:05
   - trigger: state
-    entity_id: media_player.sony_xbr_75x900h
-    from: 'on'
-    to: 'off'
-    for: 00:00:10
-    id: tv_off
+    entity_id: media_player.tv
+    attribute: app_id
+    for: 00:00:05
+  variables:
+    # Apps that are on the TV but aren't something to dim the room for.
+    not_watching:
+    - com.google.android.tvlauncher
+    - com.google.android.apps.tv.launcherx
+    - com.android.tv.settings
+    - com.spotify.tv.android
+    watching: >
+      {{ is_state('media_player.tv', 'on')
+         and state_attr('media_player.tv', 'app_id') not in not_watching }}
+    dimmed: "{{ 'scene.movie_mode_before' in states.scene | map(attribute='entity_id') | list }}"
   actions:
   - choose:
     - conditions:
-      - condition: trigger
-        id: tv_on
+      - "{{ watching and not dimmed }}"
       - condition: state
         entity_id: sun.sun
         state: below_horizon
@@ -336,11 +344,7 @@
         data:
           transition: 2
     - conditions:
-      - condition: trigger
-        id: tv_off
-      # Only restore if movie mode actually dimmed the room.
-      - condition: template
-        value_template: "{{ 'scene.movie_mode_before' in states.scene | map(attribute='entity_id') | list }}"
+      - "{{ not watching and dimmed }}"
       sequence:
       # If someone turned the room off during the film, don't light it back up.
       - if:
