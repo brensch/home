@@ -26,7 +26,9 @@ api:
 
 ota:
   - platform: esphome
-    password: !secret ota_password
+    # Encrypted with the api key above (a bare block inherits it). Required from
+    # ESPHome 2027.3; replaces the old plaintext password.
+    encryption: {}
 
 wifi:
   ssid: !secret wifi_ssid
@@ -60,8 +62,13 @@ binary_sensor:
       mode: INPUT_PULLUP
       inverted: True
     name: "Button"
-    on_press:
-      - switch.toggle: relay
+    # Hold 5 s to toggle: a bump or a brush past the plug shouldn't cut power
+    # (media powers the home server, desk the PC).
+    on_multi_click:
+      - timing:
+          - ON for at least 5s
+        then:
+          - switch.toggle: relay
 
 # --- HARDWARE: RELAY ---
 switch:

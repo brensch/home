@@ -5,9 +5,6 @@ services:
     # Pinned so upgrades are deliberate (read the release notes' breaking changes first).
     image: ghcr.io/home-assistant/home-assistant:2026.9.4
     container_name: homeassistant
-    # Reach the host-networked matter-server at host.docker.internal:5580
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     ports:
       - "8123:8123"
     # Running as host user for easier file permission management
@@ -19,26 +16,9 @@ services:
       - ./data/homeassistant:/config  # entire HA config; manage via UI
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
-    depends_on:
-      - mosquitto
     networks:
       - home_default
   # Caddy (reverse proxy) is optional and starts after HA
-
-  mosquitto:
-    image: eclipse-mosquitto:latest
-    container_name: mosquitto
-    ports:
-      - "1883:1883"
-      - "9001:9001"  # websockets (optional)
-    user: "${UID}:${GID}"
-    volumes:
-      - ./config/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
-      - ./data/mosquitto/data:/mosquitto/data
-      - ./data/mosquitto/log:/mosquitto/log
-    restart: unless-stopped
-    networks:
-      - home_default
 
   caddy:
     # Pinned by digest (the 2026-09-17 rebuild); re-pull on purpose, not by accident.
@@ -168,21 +148,6 @@ services:
       - ./data/palworld:/palworld
     networks:
       - home_default
-
-  # Matter Server: this is a HA Container install (no add-on store), so the
-  # Matter integration needs an external Matter server to talk to. Host
-  # networking is required — Matter relies on IPv6, mDNS and Thread/Wi-Fi
-  # commissioning. HA connects to it at ws://host.docker.internal:5580/ws.
-  matter-server:
-    image: ghcr.io/home-assistant-libs/python-matter-server:stable
-    container_name: matter-server
-    restart: unless-stopped
-    network_mode: host
-    security_opt:
-      - apparmor=unconfined
-    volumes:
-      - ./data/matter-server:/data
-      - /run/dbus:/run/dbus:ro
 
 volumes:
   caddy_data: {}
