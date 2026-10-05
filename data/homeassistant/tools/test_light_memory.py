@@ -5,6 +5,7 @@
 
 import json
 import os
+import struct
 import tempfile
 import unittest
 
@@ -137,6 +138,55 @@ class NanoleafTests(unittest.TestCase):
                                   ("/state", {"brightness": {"value": 0}})])
 
 
+class FakeLifx:
+    """Stands in for LifxTransport: records requests, answers GetColor."""
+
+    def __init__(self, state=(0, 0, 0, 3500, 0)):
+        hue, sat, bri, kelvin, power = state
+        self.state = struct.pack("<HHHHhH32sQ", hue, sat, bri, kelvin, 0, power, b"bulb", 0)
+        self.sent = []
+
+    def prepare(self):
+        pass
+
+    def request(self, msg_type, payload=b"", reply=None):
+        self.sent.append((msg_type, payload))
+        return self.state if msg_type == lm.Lifx.GET_COLOR else b""
+
+
+class LifxTests(unittest.TestCase):
+    def test_header_is_36_bytes_addressed_to_the_bulb(self):
+        t = lm.LifxTransport("1.2.3.4", "d0:73:d5:81:5c:c8")
+        pkt = t.packet(101, res=True)
+        self.assertEqual(len(pkt), 36)
+        size, proto, _ = struct.unpack_from("<HHI", pkt, 0)
+        self.assertEqual((size, proto & 0xFFF, bool(proto & 0x1000), bool(proto & 0x2000)), (36, 1024, True, False))
+        self.assertEqual(pkt[8:16], bytes.fromhex("d073d5815cc8") + b"\0\0")
+        self.assertEqual(pkt[22] & 1, 1)                       # res_required
+        self.assertEqual(struct.unpack_from("<H", pkt, 32)[0], 101)
+
+    def test_reads_colour_and_power(self):
+        bulb = lm.Lifx("h", "s", FakeLifx((1000, 2000, 30000, 3500, 65535)))
+        self.assertEqual(bulb.read(), {"on": True, "hue": 1000, "sat": 2000, "bri": 30000, "kelvin": 3500})
+
+    def test_restore_on_sets_colour_then_fades_power_up(self):
+        fake = FakeLifx()
+        lm.Lifx("h", "s", fake).write({"on": True, "hue": 1, "sat": 2, "bri": 3, "kelvin": 4000}, 1.5)
+        self.assertEqual(fake.sent, [(102, struct.pack("<BHHHHI", 0, 1, 2, 3, 4000, 0)),
+                                     (117, struct.pack("<HI", 65535, 1500))])
+
+    def test_restore_off_sets_colour_and_keeps_power_off(self):
+        fake = FakeLifx()
+        lm.Lifx("h", "s", fake).write({"on": False, "hue": 1, "sat": 2, "bri": 3, "kelvin": 4000}, 1)
+        self.assertEqual(fake.sent[0][0], 102)
+        self.assertEqual(fake.sent[1], (117, struct.pack("<HI", 0, 0)))
+
+    def test_off_fades_power(self):
+        fake = FakeLifx()
+        lm.Lifx("h", "s", fake).off(1)
+        self.assertEqual(fake.sent, [(117, struct.pack("<HI", 0, 1000))])
+
+
 class RoundTripTests(unittest.TestCase):
     """save() then restore() through HA-style registry files."""
 
@@ -146,12 +196,12 @@ class RoundTripTests(unittest.TestCase):
         reg = {"data": {"entities": [
             {"entity_id": "light.fan", "platform": "hue", "unique_id": "abc", "config_entry_id": "h"},
             {"entity_id": "light.lines", "platform": "nanoleaf", "unique_id": "S1", "config_entry_id": "n"},
-            {"entity_id": "light.other", "platform": "lifx", "unique_id": "x", "config_entry_id": "l"},
+            {"entity_id": "light.other", "platform": "wled", "unique_id": "x", "config_entry_id": "l"},
         ]}}
         entries = {"data": {"entries": [
             {"entry_id": "h", "data": {"host": "bridge", "api_key": "k"}},
             {"entry_id": "n", "data": {"host": "panel", "token": "tok"}},
-            {"entry_id": "l", "data": {"host": "lifx"}},
+            {"entry_id": "l", "data": {"host": "wled"}},
         ]}}
         for name, obj in (("core.entity_registry", reg), ("core.config_entries", entries)):
             with open(os.path.join(self.dir.name, ".storage", name), "w") as f:

@@ -24,7 +24,7 @@
   mode: single
 - id: arrival_flash
   alias: Arrival flash
-  description: Flash both Lines and the kitchen table light in the arriver's colour, then (after dark) turn the living room on.
+  description: Flash both Lines, the kitchen table light and Brightboy in the arriver's colour, then (after dark) turn the living room on.
   # not_from keeps an HA restart (unknown/unavailable -> home) from flashing.
   triggers:
   - trigger: state
@@ -50,16 +50,18 @@
       - light.lines_kitchen
       - light.lines_desk
       - light.fan_front    # kitchen table light
+      - light.brightboy1
       color: '{{ color }}'
       hold: 5
   - condition: state
     entity_id: sun.sun
     state: below_horizon
+  # No transition: HA's Nanoleaf integration treats a turn_on with a
+  # transition but no brightness as "full brightness", which would push an
+  # already-on Lines to 100%. Without one, lights that are on are left alone.
   - action: light.turn_on
     target:
       entity_id: light.living_room_all
-    data:
-      transition: 2
   # flash_lights queues overlapping calls itself; parallel just hands them over.
   mode: parallel
 - id: '1755761528874'
@@ -376,11 +378,11 @@
           target:
             entity_id: scene.movie_mode_before
         else:
+        # No transition: with one and no brightness, HA's Nanoleaf integration
+        # sets the Lines to 100% instead of their own brightness.
         - action: light.turn_on
           target:
             entity_id: light.living_room_all
-          data:
-            transition: 2
     # Back to the home screen or music with the TV still on.
     - conditions:
       - "{{ not watching and dimmed }}"

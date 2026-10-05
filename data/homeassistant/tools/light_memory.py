@@ -25,12 +25,17 @@ What the devices allow while staying off:
   Nanoleaf  colour only, and only by setting it while the panel is on at
             brightness 1 (black) and then going to brightness 0; a panel at
             brightness 0 comes back at 100%.
+  LIFX      colour and brightness: power is separate from colour, so SetColor
+            on an off bulb just changes what it'll come back on as.
 """
 
 import http.client
 import json
 import os
+import random
+import socket
 import ssl
+import struct
 import sys
 import threading
 import urllib.request
@@ -195,6 +200,83 @@ class Nanoleaf:
         self.http("PUT", self.base + "/state", self.off_body(fade))
 
 
+class LifxTransport:
+    """LIFX LAN protocol over UDP: just the four messages needed here.
+
+    Each message is a 36-byte header (frame, frame address, protocol header,
+    all little-endian) plus a payload; replies come back to the same socket.
+    https://lan.developer.lifx.com/docs/packet-contents"""
+
+    PORT = 56700
+    ACK = 45
+
+    def __init__(self, host, serial):
+        self.host = host
+        self.target = bytes.fromhex(serial.replace(":", "")) + b"\0\0"
+        self.source = random.randint(2, 2**32 - 1)
+        self.seq = 0
+        self.sock = None
+
+    def prepare(self):
+        if self.sock is None:
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self.sock.settimeout(0.3)
+
+    def packet(self, msg_type, payload=b"", res=False, ack=False):
+        self.seq = (self.seq + 1) % 256
+        size = 36 + len(payload)
+        # protocol 1024, addressable; not tagged since there's a target
+        header = struct.pack("<HHI", size, 1024 | (1 << 12), self.source)
+        header += struct.pack("<8s6sBB", self.target, b"\0" * 6, (ack << 1) | res, self.seq)
+        header += struct.pack("<QHH", 0, msg_type, 0)
+        return header + payload
+
+    def request(self, msg_type, payload=b"", reply=None):
+        """Send, wait for `reply` type (or an ack when reply is None); 3 tries."""
+        self.prepare()
+        for _ in range(3):
+            pkt = self.packet(msg_type, payload, res=reply is not None, ack=reply is None)
+            seq = self.seq
+            self.sock.sendto(pkt, (self.host, self.PORT))
+            try:
+                while True:
+                    data, _ = self.sock.recvfrom(1024)
+                    got_type, got_seq = struct.unpack_from("<H", data, 32)[0], data[23]
+                    if got_seq == seq and got_type == (reply or self.ACK):
+                        return data[36:]
+            except socket.timeout:
+                continue
+        raise OSError(f"LIFX {self.host}: no reply to message {msg_type}")
+
+
+class Lifx:
+    """A LIFX bulb. Power and colour are independent, which makes this easy."""
+
+    GET_COLOR, SET_COLOR, LIGHT_STATE, SET_POWER = 101, 102, 107, 117
+
+    def __init__(self, host, serial, transport=None):
+        self.transport = transport or LifxTransport(host, serial)
+
+    def prepare(self):
+        self.transport.prepare()
+
+    def read(self):
+        hue, sat, bri, kelvin, _, power, _, _ = struct.unpack(
+            "<HHHHhH32sQ", self.transport.request(self.GET_COLOR, reply=self.LIGHT_STATE))
+        return {"on": power > 0, "hue": hue, "sat": sat, "bri": bri, "kelvin": kelvin}
+
+    def write(self, saved, fade):
+        # The colour first, silently (on an off bulb it doesn't light it); then
+        # power, fading up into that colour for a bulb that was on.
+        self.transport.request(self.SET_COLOR, struct.pack(
+            "<BHHHHI", 0, saved["hue"], saved["sat"], saved["bri"], saved["kelvin"], 0))
+        self.transport.request(self.SET_POWER, struct.pack(
+            "<HI", 65535 if saved["on"] else 0, int(fade * 1000) if saved["on"] else 0))
+
+    def off(self, fade):
+        self.transport.request(self.SET_POWER, struct.pack("<HI", 0, int(fade * 1000)))
+
+
 def devices(entity_ids, config=CONFIG, http=None):
     """Map light entity_ids to device handles using HA's registries."""
     with open(os.path.join(config, ".storage", "core.entity_registry")) as f:
@@ -211,6 +293,8 @@ def devices(entity_ids, config=CONFIG, http=None):
             out[eid] = Hue(entry["host"], entry["api_key"], ent["unique_id"], http)
         elif ent["platform"] == "nanoleaf":
             out[eid] = Nanoleaf(entry["host"], entry["token"], http)
+        elif ent["platform"] == "lifx":
+            out[eid] = Lifx(entry["host"], entries[ent["config_entry_id"]]["unique_id"])
         else:
             raise SystemExit(f"{eid}: unsupported platform {ent['platform']}")
     return out
@@ -226,7 +310,7 @@ def _each(devs, fn):
 
     def run(eid, dev):
         try:
-            prepare = getattr(getattr(dev, "http", None), "prepare", None)
+            prepare = getattr(dev, "prepare", None) or getattr(getattr(dev, "http", None), "prepare", None)
             if prepare:
                 prepare()
         finally:
