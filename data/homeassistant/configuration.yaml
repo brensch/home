@@ -86,8 +86,10 @@ input_datetime:
 shell_command:
   light_memory: "python3 /config/tools/light_memory.py {{ args }}"
 
-# Dashboards defined as YAML in git (dashboards/). The storage-mode Overview
-# and Map dashboards still exist; these are the ones to use.
+# Dashboards defined as YAML in git (dashboards/), one job each:
+#   Home = daily command center (default); Rooms = every bulb and scene;
+#   Energy = power and the bill; System = upkeep, automations, plug power;
+#   Demo = card styles to choose from. The old storage Overview is hidden.
 lovelace:
   dashboards:
     home-dash:
@@ -96,9 +98,28 @@ lovelace:
       icon: mdi:home
       show_in_sidebar: true
       filename: dashboards/home.yaml
-    house-dash:
+    rooms-dash:
       mode: yaml
-      title: House
-      icon: mdi:home-analytics
+      title: Rooms
+      icon: mdi:floor-plan
       show_in_sidebar: true
-      filename: dashboards/house.yaml
+      filename: dashboards/rooms.yaml
+    energy-dash:
+      mode: yaml
+      title: Energy use
+      icon: mdi:lightning-bolt
+      show_in_sidebar: true
+      filename: dashboards/energy.yaml
+    system-dash:
+      mode: yaml
+      title: System
+      icon: mdi:cog
+      show_in_sidebar: true
+      require_admin: true
+      filename: dashboards/system.yaml
+    demo-dash:
+      mode: yaml
+      title: Demo
+      icon: mdi:palette-swatch
+      show_in_sidebar: true
+      filename: dashboards/demo.yaml

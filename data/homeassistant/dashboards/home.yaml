@@ -1,5 +1,5 @@
-# Everyday dashboard: who's home, lights per room, the TV. Phone first.
-# Registered in configuration.yaml (lovelace: dashboards: home-dash).
+# Command center: what you'd touch in a day, on one phone screen. Detail lives on
+# the other dashboards (Rooms, Energy, System); this page only links to them.
 views:
   - title: Home
     path: home
@@ -13,53 +13,129 @@ views:
         entity: person.alyssa
       - type: entity
         entity: weather.forecast_home
+      - type: entity
+        entity: sensor.hue_outdoor_motion_sensor_1_temperature
+        name: Outside
+        icon: mdi:thermometer
+      # Alerts: only shown when something needs attention.
+      - type: entity
+        entity: switch.fridge_relay
+        name: Fridge plug is OFF
+        icon: mdi:fridge-alert
+        color: red
+        visibility:
+          - condition: state
+            entity: switch.fridge_relay
+            state: "off"
+      - type: entity
+        entity: sensor.front_door_switch_battery
+        name: Front door switch battery
+        color: red
+        tap_action: {action: navigate, navigation_path: /system-dash/system}
+        visibility:
+          - condition: numeric_state
+            entity: sensor.front_door_switch_battery
+            below: 15
+      - type: entity
+        entity: sensor.kitchen_switch_battery
+        name: Kitchen switch battery
+        color: red
+        tap_action: {action: navigate, navigation_path: /system-dash/system}
+        visibility:
+          - condition: numeric_state
+            entity: sensor.kitchen_switch_battery
+            below: 15
+      - type: entity
+        entity: sensor.bedroom_switch_battery
+        name: Bedroom switch battery
+        color: red
+        tap_action: {action: navigate, navigation_path: /system-dash/system}
+        visibility:
+          - condition: numeric_state
+            entity: sensor.bedroom_switch_battery
+            below: 15
+      - type: entity
+        entity: sensor.hue_outdoor_motion_sensor_1_battery
+        name: Outdoor sensor battery
+        color: red
+        tap_action: {action: navigate, navigation_path: /system-dash/system}
+        visibility:
+          - condition: numeric_state
+            entity: sensor.hue_outdoor_motion_sensor_1_battery
+            below: 15
     sections:
       - type: grid
         cards:
           - type: heading
-            heading: Lights
+            heading: Rooms
+            icon: mdi:floor-plan
+            # Tap the heading for every bulb and scene; hold a room tile likewise.
+            tap_action: {action: navigate, navigation_path: /rooms-dash/rooms}
           - type: tile
             entity: light.living_room_all
             name: Living room
+            icon: mdi:sofa
             features_position: bottom
-            features:
-              - type: light-brightness
+            features: [{type: light-brightness}]
+            hold_action: {action: navigate, navigation_path: /rooms-dash/rooms}
           - type: tile
             entity: light.kitchen_all
             name: Kitchen
+            icon: mdi:countertop
             features_position: bottom
-            features:
-              - type: light-brightness
+            features: [{type: light-brightness}]
+            hold_action: {action: navigate, navigation_path: /rooms-dash/rooms}
           - type: tile
             entity: light.bedroom
             name: Bedroom
+            icon: mdi:bed
             features_position: bottom
-            features:
-              - type: light-brightness
+            features: [{type: light-brightness}]
+            hold_action: {action: navigate, navigation_path: /rooms-dash/rooms}
           - type: tile
             entity: light.balcony
             name: Balcony
+            icon: mdi:flower-tulip
           - type: tile
             entity: light.closet
             name: Closet
+            icon: mdi:hanger
+      - type: grid
+        cards:
+          - type: heading
+            heading: Moods
+            icon: mdi:palette
           - type: button
-            name: Everything off
+            name: Bright
+            icon: mdi:white-balance-sunny
+            tap_action: {action: perform-action, perform_action: script.mood_bright}
+            grid_options: {columns: 3, rows: 2}
+          - type: button
+            name: Evening
+            icon: mdi:weather-sunset
+            tap_action: {action: perform-action, perform_action: script.mood_evening}
+            grid_options: {columns: 3, rows: 2}
+          - type: button
+            name: Night
+            icon: mdi:weather-night
+            tap_action: {action: perform-action, perform_action: script.mood_night}
+            grid_options: {columns: 3, rows: 2}
+          - type: button
+            name: All off
             icon: mdi:power
             tap_action:
               action: perform-action
               perform_action: light.turn_off
-              target:
-                entity_id: all
-              confirmation:
-                text: Turn off every light in the house?
-      - type: grid
-        cards:
+              target: {entity_id: all}
+              confirmation: {text: "Turn off every light in the house?"}
+            grid_options: {columns: 3, rows: 2}
           - type: heading
             heading: TV
+            heading_style: subtitle
+            icon: mdi:television
           - type: tile
             entity: media_player.tv
             name: TV
-          # Artwork and controls only while something is casting/playing.
           - type: conditional
             conditions:
               - condition: state
@@ -71,16 +147,18 @@ views:
       - type: grid
         cards:
           - type: heading
-            heading: Accent lights
+            heading: At a glance
+            icon: mdi:eye
           - type: tile
-            entity: light.lines_desk
-            name: Lines desk
+            entity: sensor.fridge_power
+            name: Fridge
+            icon: mdi:fridge
+            tap_action: {action: navigate, navigation_path: /energy-dash/energy}
           - type: tile
-            entity: light.lines_kitchen
-            name: Lines kitchen
-          - type: tile
-            entity: light.brightboy1
-            name: Brightboy
-          - type: tile
-            entity: switch.piano_relay
-            name: Piano
+            entity: sensor.elec_account_3015750579_current_bill_electric_cost_to_date
+            name: Bill so far
+            icon: mdi:cash
+            tap_action: {action: navigate, navigation_path: /energy-dash/energy}
+          - type: todo-list
+            entity: todo.shopping_list
+            title: Shopping list

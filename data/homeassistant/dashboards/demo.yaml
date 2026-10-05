@@ -1,0 +1,85 @@
+# Card styles side by side, all built into HA (no add-ons), on the same few
+# entities. Pick letters and the real dashboards get restyled to match.
+views:
+  - title: Demo
+    path: demo
+    icon: mdi:palette-swatch
+    type: sections
+    max_columns: 4
+    badges:
+      # Badge styles: icon + state, name + state, state only, icon only.
+      - {type: entity, entity: person.brend}
+      - {type: entity, entity: weather.forecast_home, show_name: true}
+      - {type: entity, entity: sensor.desk_power, show_icon: false, show_name: true, name: Desk}
+      - {type: entity, entity: light.living_room_all, show_state: false, color: amber}
+    sections:
+      - type: grid
+        cards:
+          - {type: heading, heading: "A — Tile (default)"}
+          - {type: tile, entity: light.living_room_all, name: Living room}
+          - {type: tile, entity: light.kitchen_all, name: Kitchen}
+          - {type: heading, heading: "B — Tile, vertical", heading_style: subtitle}
+          - {type: tile, entity: light.living_room_all, name: Living room, vertical: true, grid_options: {columns: 4, rows: 2}}
+          - {type: tile, entity: light.kitchen_all, name: Kitchen, vertical: true, grid_options: {columns: 4, rows: 2}}
+          - {type: tile, entity: light.bedroom, name: Bedroom, vertical: true, grid_options: {columns: 4, rows: 2}}
+          - {type: heading, heading: "C — Tile + sliders underneath", heading_style: subtitle}
+          - type: tile
+            entity: light.living_room_all
+            name: Living room
+            features_position: bottom
+            features: [{type: light-brightness}, {type: light-color-temp}]
+            grid_options: {columns: 12}
+          - {type: heading, heading: "D — Tile + slider inline (compact)", heading_style: subtitle}
+          - {type: tile, entity: light.living_room_all, name: Living room, features_position: inline, features: [{type: light-brightness}], grid_options: {columns: 12}}
+          - {type: tile, entity: light.kitchen_all, name: Kitchen, features_position: inline, features: [{type: light-brightness}], grid_options: {columns: 12}}
+      - type: grid
+        cards:
+          - {type: heading, heading: "E — Big buttons"}
+          - {type: button, entity: light.living_room_all, name: Living room, show_state: true, grid_options: {columns: 6, rows: 2}}
+          - {type: button, entity: light.kitchen_all, name: Kitchen, show_state: true, grid_options: {columns: 6, rows: 2}}
+          - {type: heading, heading: "F — Icon-only buttons", heading_style: subtitle}
+          - {type: button, entity: light.living_room_all, show_name: false, icon: mdi:sofa, grid_options: {columns: 3, rows: 1}}
+          - {type: button, entity: light.kitchen_all, show_name: false, icon: mdi:countertop, grid_options: {columns: 3, rows: 1}}
+          - {type: button, entity: light.bedroom, show_name: false, icon: mdi:bed, grid_options: {columns: 3, rows: 1}}
+          - {type: button, entity: light.balcony, show_name: false, icon: mdi:flower-tulip, grid_options: {columns: 3, rows: 1}}
+          - {type: heading, heading: "G — Coloured mood tiles", heading_style: subtitle}
+          - {type: tile, entity: script.mood_bright, name: Bright, icon: mdi:white-balance-sunny, color: amber, tap_action: {action: perform-action, perform_action: script.mood_bright}, grid_options: {columns: 6}}
+          - {type: tile, entity: script.mood_evening, name: Evening, icon: mdi:weather-sunset, color: deep-orange, tap_action: {action: perform-action, perform_action: script.mood_evening}, grid_options: {columns: 6}}
+          - {type: tile, entity: script.mood_night, name: Night, icon: mdi:weather-night, color: indigo, tap_action: {action: perform-action, perform_action: script.mood_night}, grid_options: {columns: 6}}
+      - type: grid
+        cards:
+          - {type: heading, heading: "H — Light dial"}
+          - {type: light, entity: light.living_room_all, name: Living room}
+          - {type: heading, heading: "I — Glance row", heading_style: subtitle}
+          - type: glance
+            show_state: true
+            entities:
+              - {entity: light.living_room_all, name: Living}
+              - {entity: light.kitchen_all, name: Kitchen}
+              - {entity: light.bedroom, name: Bed}
+              - {entity: light.balcony, name: Balcony}
+          - {type: heading, heading: "J — List with toggles", heading_style: subtitle}
+          - type: entities
+            entities:
+              - {entity: light.living_room_all, name: Living room}
+              - {entity: light.kitchen_all, name: Kitchen}
+              - {entity: light.bedroom, name: Bedroom}
+      - type: grid
+        cards:
+          - type: heading
+            heading: "K — Heading with pill switches"
+            badges:
+              - {type: entity, entity: light.living_room_all, name: Living, show_name: true, tap_action: {action: toggle}}
+              - {type: entity, entity: light.kitchen_all, name: Kitchen, show_name: true, tap_action: {action: toggle}}
+              - {type: entity, entity: light.bedroom, name: Bed, show_name: true, tap_action: {action: toggle}}
+          - {type: heading, heading: "L — Area card", heading_style: subtitle}
+          - {type: area, area: living_room}
+          - {type: heading, heading: "M — Gauge", heading_style: subtitle}
+          - type: gauge
+            entity: sensor.desk_power
+            name: Desk power
+            min: 0
+            max: 600
+            severity: {green: 0, yellow: 200, red: 400}
+          - {type: heading, heading: "N — Sensor with graph", heading_style: subtitle}
+          - {type: sensor, entity: sensor.media_power, name: Server power, graph: line, hours_to_show: 24}

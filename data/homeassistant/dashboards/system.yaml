@@ -1,0 +1,109 @@
+# Upkeep: batteries, backups, what's offline, pausing automations, plug power.
+views:
+  - title: System
+    path: system
+    icon: mdi:cog
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Needs attention
+            icon: mdi:alert-circle-outline
+          # Lists only devices that are currently unreachable; empty is good.
+          - type: entity-filter
+            card: {type: entities, title: Offline right now}
+            show_empty: true
+            conditions:
+              - condition: state
+                state: unavailable
+            entities:
+              - light.tv_left
+              - light.tv_right
+              - light.hektar
+              - light.shelf
+              - light.lines_desk
+              - light.lines_kitchen
+              - light.tree
+              - light.garland
+              - light.kitchen_1
+              - light.kitchen_2
+              - light.kitchen_3
+              - light.kitchen_4
+              - light.fan_front
+              - light.fan_back
+              - light.kitchen_uplight
+              - light.brightboy1
+              - light.brendside
+              - light.gril_bedside
+              - light.fado
+              - light.fily
+              - light.uplight
+              - light.balcony
+              - light.closet
+              - media_player.tv
+              - switch.fridge_relay
+              - switch.desk_relay
+              - switch.media_relay
+              - switch.piano_relay
+          - type: heading
+            heading: Batteries
+            heading_style: subtitle
+            icon: mdi:battery
+          - {type: tile, entity: sensor.front_door_switch_battery, name: Front door switch}
+          - {type: tile, entity: sensor.kitchen_switch_battery, name: Kitchen switch}
+          - {type: tile, entity: sensor.bedroom_switch_battery, name: Bedroom switch}
+          - {type: tile, entity: sensor.hue_outdoor_motion_sensor_1_battery, name: Outdoor sensor}
+          - {type: tile, entity: sensor.closet_battery, name: Closet sensor}
+          - type: heading
+            heading: Server
+            heading_style: subtitle
+            icon: mdi:server
+          - {type: tile, entity: sensor.backup_last_successful_automatic_backup, name: Last backup}
+          - {type: tile, entity: sensor.backup_next_scheduled_automatic_backup, name: Next backup}
+          - {type: tile, entity: input_datetime.server_heartbeat, name: Heartbeat}
+      - type: grid
+        cards:
+          - type: heading
+            heading: Automations
+            icon: mdi:robot
+          # Tap to pause/resume.
+          - {type: tile, entity: automation.arrival_flash, name: Arrival flash, tap_action: {action: toggle}}
+          - {type: tile, entity: automation.movie_mode, name: Movie mode, tap_action: {action: toggle}}
+          - {type: tile, entity: automation.kitchen_off_when_the_tv_plays, name: Kitchen off on play, tap_action: {action: toggle}}
+          - {type: tile, entity: automation.turn_off_lights_when_we_leave, name: Lights off when we leave, tap_action: {action: toggle}}
+          - {type: tile, entity: automation.wake_up_light, name: Wake-up light, tap_action: {action: toggle}}
+          - {type: tile, entity: automation.balcony_motion_light, name: Balcony motion, tap_action: {action: toggle}}
+          - {type: tile, entity: automation.closet_motion_on, name: Closet motion on, tap_action: {action: toggle}}
+          - {type: tile, entity: automation.closet_motion_off, name: Closet motion off, tap_action: {action: toggle}}
+          - {type: tile, entity: automation.fridge_watchdog, name: Fridge watchdog, tap_action: {action: toggle}}
+          - {type: tile, entity: automation.downtime_report, name: Downtime report, tap_action: {action: toggle}}
+          - {type: tile, entity: automation.weekly_battery_report, name: Battery report, tap_action: {action: toggle}}
+          - {type: tile, entity: automation.kitchen_hue_button, name: Love button, tap_action: {action: toggle}}
+      - type: grid
+        cards:
+          - type: heading
+            heading: Plug power
+            icon: mdi:power-socket-us
+          # Every one asks first. Media powers this server; desk the PC and Mac mini.
+          - type: tile
+            entity: switch.media_relay
+            name: Home server
+            icon: mdi:server
+            tap_action: {action: toggle, confirmation: {text: "This plug powers the home server, including Home Assistant. Switch it?"}}
+          - type: tile
+            entity: switch.desk_relay
+            name: Desk (PC + Mac mini)
+            icon: mdi:desktop-tower-monitor
+            tap_action: {action: toggle, confirmation: {text: "Switch the desk plug (PC and the BlueBubbles Mac mini)?"}}
+          - type: tile
+            entity: switch.fridge_relay
+            name: Fridge
+            icon: mdi:fridge
+            tap_action: {action: toggle, confirmation: {text: "Switch the fridge plug?"}}
+          - type: tile
+            entity: switch.piano_relay
+            name: Piano
+            icon: mdi:piano
+            tap_action: {action: toggle}
