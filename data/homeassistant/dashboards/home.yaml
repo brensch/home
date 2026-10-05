@@ -82,23 +82,22 @@ views:
             icon: mdi:floor-plan
             # Tap the heading for every bulb and scene in each room.
             tap_action: {action: navigate, navigation_path: /rooms-dash/rooms}
-          # One line per room (www/room-row-card.js): bulb = on/off, slider, ⋮ = options.
-          - {type: custom:room-row-card, entity: light.living_room_all, name: Living room, icon: mdi:sofa}
-          - {type: custom:room-row-card, entity: light.kitchen_all, name: Kitchen, icon: mdi:stove}
-          - {type: custom:room-row-card, entity: light.bedroom, name: Bedroom, icon: mdi:bed}
-          - {type: custom:room-row-card, entity: light.balcony, name: Balcony, icon: mdi:flower-tulip}
-          - {type: custom:room-row-card, entity: light.closet, name: Closet, icon: mdi:hanger}
-          - type: tile
-            entity: script.all_lights_off
+          # Built-in light dials, three to a row: tap the bulb for on/off, drag the ring to dim,
+          # tap the name for options.
+          - {type: light, entity: light.living_room_all, name: Living room, icon: mdi:sofa, grid_options: {columns: 4, rows: 3}}
+          - {type: light, entity: light.kitchen_all, name: Kitchen, icon: mdi:stove, grid_options: {columns: 4, rows: 3}}
+          - {type: light, entity: light.bedroom, name: Bedroom, icon: mdi:bed, grid_options: {columns: 4, rows: 3}}
+          - {type: light, entity: light.balcony, name: Balcony, icon: mdi:flower-tulip, grid_options: {columns: 4, rows: 3}}
+          - {type: light, entity: light.closet, name: Closet, icon: mdi:hanger, grid_options: {columns: 4, rows: 3}}
+          # Sixth slot, same size as the dials.
+          - type: button
             name: All off
             icon: mdi:power
-            hide_state: true
-            tap_action: &all_off
+            tap_action:
               action: perform-action
               perform_action: script.all_lights_off
               confirmation: {text: "Turn off every light in the house?"}
-            icon_tap_action: *all_off
-            grid_options: {columns: 12, rows: 1}
+            grid_options: {columns: 4, rows: 3}
       - type: grid
         cards:
           - type: heading
