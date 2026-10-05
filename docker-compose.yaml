@@ -2,7 +2,8 @@ name: homelab
 
 services:
   homeassistant:
-    image: ghcr.io/home-assistant/home-assistant:latest
+    # Pinned so upgrades are deliberate (read the release notes' breaking changes first).
+    image: ghcr.io/home-assistant/home-assistant:2026.9.4
     container_name: homeassistant
     # Reach the host-networked matter-server at host.docker.internal:5580
     extra_hosts:
@@ -116,7 +117,8 @@ services:
         max-file: "3"
 
   esphome:
-    image: esphome/esphome:latest
+    # Pinned; after bumping, re-flash the plugs so device firmware matches.
+    image: esphome/esphome:2026.9.1
     container_name: esphome
     volumes:
       - ./data/esphome:/config
@@ -124,9 +126,13 @@ services:
     environment:
       - TZ=America/Los_Angeles
       - PLATFORMIO_CORE_DIR=/config/.esphome/platformio
+      # 2026.9 compiles through ccache, whose default dir is under $HOME (/), unwritable as ${UID}.
+      - CCACHE_DIR=/config/.esphome/ccache
+      # The dashboard can flash any plug and 6052 is published on the LAN, so it needs a login.
+      - ESPHOME_USERNAME=${ESPHOME_USERNAME}
+      - ESPHOME_PASSWORD=${ESPHOME_PASSWORD}
     ports:
-      - "6052:6052"  # ESPHome dashboard
-      - "6123:6123"  # OTA updates
+      - "6052:6052"  # ESPHome dashboard (OTA is outbound to the plugs; it needs no inbound port)
     restart: unless-stopped
     networks:
       - home_default

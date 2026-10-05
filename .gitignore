@@ -20,3 +20,6 @@ noip.conf
 # Python virtual environment
 venv/
 
+
+# Home Assistant runtime state that happens to be YAML (banned client IPs)
+data/homeassistant/ip_bans.yaml

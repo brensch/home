@@ -20,7 +20,7 @@ logger:
 
 api:
   encryption:
-    key: "gZVt6/DITvTV/FjMEZq2dOHXsd8KC6mDfHxvSk5KOPc="
+    key: !secret api_key_desk
   # Connect to Home Assistant on the Docker network
   # No need to specify address - ESPHome auto-discovers HA
 
@@ -40,7 +40,7 @@ wifi:
 
   ap:
     ssid: "Desk Fallback Hotspot"
-    password: "bummerino"
+    password: !secret ap_password
 
 captive_portal:
 
