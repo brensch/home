@@ -48,7 +48,7 @@ google_assistant:
     - camera
 homeassistant:
   external_url: https://hass.brensch.com
-  internal_url: http://192.168.1.37:8123
+  internal_url: http://192.168.1.8:8123
 
 # Combined room light groups: Hue room + Nanoleaf/WLED, so one tile
 # controls every light in the room (not just the Hue bulbs). Defined in
