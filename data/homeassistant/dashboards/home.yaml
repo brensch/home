@@ -1,0 +1,86 @@
+# Everyday dashboard: who's home, lights per room, the TV. Phone first.
+# Registered in configuration.yaml (lovelace: dashboards: home-dash).
+views:
+  - title: Home
+    path: home
+    icon: mdi:home
+    type: sections
+    max_columns: 3
+    badges:
+      - type: entity
+        entity: person.brend
+      - type: entity
+        entity: person.alyssa
+      - type: entity
+        entity: weather.forecast_home
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Lights
+          - type: tile
+            entity: light.living_room_all
+            name: Living room
+            features_position: bottom
+            features:
+              - type: light-brightness
+          - type: tile
+            entity: light.kitchen_all
+            name: Kitchen
+            features_position: bottom
+            features:
+              - type: light-brightness
+          - type: tile
+            entity: light.bedroom
+            name: Bedroom
+            features_position: bottom
+            features:
+              - type: light-brightness
+          - type: tile
+            entity: light.balcony
+            name: Balcony
+          - type: tile
+            entity: light.closet
+            name: Closet
+          - type: button
+            name: Everything off
+            icon: mdi:power
+            tap_action:
+              action: perform-action
+              perform_action: light.turn_off
+              target:
+                entity_id: all
+              confirmation:
+                text: Turn off every light in the house?
+      - type: grid
+        cards:
+          - type: heading
+            heading: TV
+          - type: tile
+            entity: media_player.tv
+            name: TV
+          # Artwork and controls only while something is casting/playing.
+          - type: conditional
+            conditions:
+              - condition: state
+                entity: media_player.tv_cast
+                state_not: "off"
+            card:
+              type: media-control
+              entity: media_player.tv_cast
+      - type: grid
+        cards:
+          - type: heading
+            heading: Accent lights
+          - type: tile
+            entity: light.lines_desk
+            name: Lines desk
+          - type: tile
+            entity: light.lines_kitchen
+            name: Lines kitchen
+          - type: tile
+            entity: light.brightboy1
+            name: Brightboy
+          - type: tile
+            entity: switch.piano_relay
+            name: Piano

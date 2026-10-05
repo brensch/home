@@ -16,6 +16,10 @@ services:
       - ./data/homeassistant:/config  # entire HA config; manage via UI
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
+    # HA needs more than Docker's default 10 s to shut down (the recorder's
+    # final commit); being killed mid-shutdown left the database "not shut down
+    # cleanly" on restarts.
+    stop_grace_period: 2m
     networks:
       - home_default
   # Caddy (reverse proxy) is optional and starts after HA
