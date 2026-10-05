@@ -98,3 +98,7 @@ flash_lights:
           level: error
           logger: script.flash_lights
           message: "light_memory restore: {{ restored.stderr }}"
+    # The restore fades run on the devices after the command returns. Wait them
+    # out so a queued flash (two arrivals at once) saves settled lights, not
+    # half-faded ones.
+    - delay: 1.5

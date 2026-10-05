@@ -129,12 +129,33 @@ class Watch:
         return [] if faded is None else [x for x in r[faded:] if x[0] and x[1] > 1]
 
 
-def scenario(name, on):
+def scenario(name, on, together=False):
     print(f"\n== {name}: " + ", ".join(f"{e.split('.')[1]} {'on' if on[e] else 'off'}" for e in LIGHTS))
     set_look(on)
     d = dev()
     watches = {e: Watch(d[e]) for e in LIGHTS if not on[e] and isinstance(d[e], (lm.Nanoleaf, lm.Lifx))}
-    ha("script/flash_lights", {"lights": LIGHTS, "color": FLASH, "hold": 1})
+    if not together:
+        ha("script/flash_lights", {"lights": LIGHTS, "color": FLASH, "hold": 1})
+    else:
+        # Both arrive at once: two flashes requested in the same instant. The
+        # script is queued, so the second must start only after the first has
+        # finished (call returns ~a whole flash apart), not run over it.
+        t0, done = time.monotonic(), {}
+
+        def call(colour):
+            ha("script/flash_lights", {"lights": LIGHTS, "color": colour, "hold": 1})
+            done[tuple(colour)] = time.monotonic() - t0
+
+        threads = [threading.Thread(target=call, args=(c,)) for c in (FLASH, [255, 110, 0])]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        first, second = sorted(done.values())
+        ok = second - first >= 5
+        print(f"    {'PASS' if ok else 'FAIL'} flashes took turns: finished at {first:.1f}s and {second:.1f}s")
+        if not ok:
+            failures.append(f"flashes overlapped: finished at {first:.1f}s and {second:.1f}s")
     time.sleep(3)  # restore fade
     for eid, w in watches.items():
         lit = w.lit_after_fading_out()
@@ -171,6 +192,7 @@ def main():
         scenario("A all on", {FAN: True, LK: True, LD: True, BB: True})
         scenario("B all off", {FAN: False, LK: False, LD: False, BB: False})
         scenario("C mixed", {FAN: True, LK: False, LD: True, BB: False})
+        scenario("D both arrive at once, mixed", {FAN: True, LK: False, LD: True, BB: False}, together=True)
     finally:
         lm.restore("e2e_backup", fade=1, config=CONFIG)
         print("\nlights put back as they were before the test")
