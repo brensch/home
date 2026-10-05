@@ -24,7 +24,7 @@
   mode: single
 - id: arrival_flash
   alias: Arrival flash
-  description: Flash both Lines in the arriver's colour, then (after dark) turn the living room on.
+  description: Flash both Lines and the kitchen table light in the arriver's colour, then (after dark) turn the living room on.
   # not_from keeps an HA restart (unknown/unavailable -> home) from flashing.
   triggers:
   - trigger: state
@@ -49,6 +49,7 @@
       lights:
       - light.lines_kitchen
       - light.lines_desk
+      - light.fan_front    # kitchen table light
       color: '{{ color }}'
       hold: 5
   - condition: state
