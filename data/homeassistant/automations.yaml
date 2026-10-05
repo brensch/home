@@ -3,7 +3,7 @@
   description: 'When leave, and Brend/alyssa aren’t home, turn off lights. '
   triggers:
   - trigger: zone
-    entity_id: device_tracker.alyssas_iphone_12_fall_2020
+    entity_id: device_tracker.alyssas_iphone
     zone: zone.home
     event: leave
   - trigger: zone
@@ -14,9 +14,9 @@
   - condition: and
     conditions:
     - condition: device
-      device_id: 51c8cd84d4445784458a1699cccc5fcf
+      device_id: 434124680b8b5c3e1439dde1a2c1eee6
       domain: device_tracker
-      entity_id: d6d298eb6d9ec2e92d00d6cff3a3e01a
+      entity_id: c0965c200253fa8dfcd703714d1f01cd
       type: is_not_home
     - condition: device
       device_id: e60320af7226271d8a3213cc70eaa562
@@ -40,7 +40,7 @@
   use_blueprint:
     path: brensch/arrival_flash.yaml
     input:
-      arrival_tracker: device_tracker.alyssas_iphone_12_fall_2020
+      arrival_tracker: device_tracker.alyssas_iphone
       flash_color:
       - 0
       - 255
@@ -81,8 +81,9 @@
     data:
       message: Love
       title: Hi
-  - action: notify.mobile_app_alyssas_iphone_12_fall_2020
-    metadata: {}
+  - action: notify.send_message
+    target:
+      entity_id: notify.alyssas_iphone
     data:
       message: Love!
       title: Love button pressed
