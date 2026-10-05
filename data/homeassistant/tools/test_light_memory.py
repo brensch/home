@@ -90,9 +90,9 @@ class OffTests(unittest.TestCase):
         self.assertEqual(lm.Hue("bridge", "k", "abc", FakeHttp({})).off_body(1),
                          {"on": {"on": False}, "dynamics": {"duration": 1000}})
 
-    def test_nanoleaf_off_fades_brightness_to_zero(self):
+    def test_nanoleaf_off_fades_to_black_but_stays_on(self):
         self.assertEqual(lm.Nanoleaf("panel", "tok", FakeHttp({})).off_body(1),
-                         {"brightness": {"value": 0, "duration": 1}})
+                         {"brightness": {"value": 1, "duration": 1}})
 
     def test_fade_argument_parsing(self):
         self.assertEqual(lm._split_fade(["light.a", "light.b", "--fade", "2"]), (["light.a", "light.b"], 2.0))
@@ -122,16 +122,19 @@ class NanoleafTests(unittest.TestCase):
             ("/state", {"brightness": {"value": 70, "duration": 1}}),
         ])
 
-    def test_restore_off_sends_colour_with_brightness_zero_in_one_request(self):
-        # Separately, the colour would switch the panel on.
+    def test_restore_off_sets_colour_while_black_then_switches_off(self):
+        # A colour sent to a fully-off panel lights it at full brightness first.
         bodies = lm.Nanoleaf("panel", "tok", FakeHttp({})).bodies(
             {"on": False, "brightness": 50, "mode": "ct", "ct": 3000}, 1)
-        self.assertEqual(bodies, [("/state", {"ct": {"value": 3000}, "brightness": {"value": 0}})])
+        self.assertEqual(bodies, [("/state", {"brightness": {"value": 1}}),
+                                  ("/state", {"ct": {"value": 3000}}),
+                                  ("/state", {"brightness": {"value": 0}})])
 
     def test_restore_off_effect(self):
         bodies = lm.Nanoleaf("panel", "tok", FakeHttp({})).bodies(
             {"on": False, "brightness": 50, "mode": "effect", "effect": "Snowfall"}, 1)
-        self.assertEqual(bodies, [("/effects", {"select": "Snowfall"}), ("/state", {"brightness": {"value": 0}})])
+        self.assertEqual(bodies, [("/state", {"brightness": {"value": 1}}), ("/effects", {"select": "Snowfall"}),
+                                  ("/state", {"brightness": {"value": 0}})])
 
 
 class RoundTripTests(unittest.TestCase):

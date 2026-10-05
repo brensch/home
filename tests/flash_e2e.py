@@ -4,17 +4,19 @@
 Sets fan front (Hue), Lines Kitchen and Lines Desk (Nanoleaf) to distinctive
 looks, runs the flash with them all on, all off and mixed, and checks the result
 on the devices themselves (not HA's view): lights that were on are back as they
-were, lights that were off stay off and come back on in their own colour rather
-than the flash colour. Puts the lights back as it found them at the end.
+were, lights that were off stay off without a blink and come back on in their
+own colour rather than the flash colour. Puts the lights back as it found them at the end.
 
 The lights visibly change for about a minute.
 
   python3 tests/flash_e2e.py
 """
 
+import http.client
 import json
 import os
 import sys
+import threading
 import time
 import urllib.request
 
@@ -77,11 +79,52 @@ def colour_keys(eid):
     return [k for k in ("mirek", "hue", "sat", "ct") if k in LOOKS[eid]]
 
 
+class Watch:
+    """Reads a Nanoleaf's on/brightness every 20 ms, to catch blinks that a
+    before/after comparison can't see."""
+
+    def __init__(self, dev):
+        self.host = dev.base.split("/")[2]
+        self.path = "/" + dev.base.split("/", 3)[3] + "/state"
+        self.readings, self.stop = [], threading.Event()
+        threading.Thread(target=self.run, daemon=True).start()
+
+    def run(self):
+        c = http.client.HTTPConnection(self.host, timeout=2)
+        while not self.stop.is_set():
+            try:
+                c.request("GET", self.path)
+                s = json.loads(c.getresponse().read())
+                self.readings.append((s["on"]["value"], s["brightness"]["value"]))
+            except Exception:
+                c = http.client.HTTPConnection(self.host, timeout=2)
+            time.sleep(0.02)
+
+    def lit_after_fading_out(self):
+        """On-readings brighter than 1 after the flash has faded to (near) black."""
+        self.stop.set()
+        r = self.readings
+        peak = max((i for i, (o, b) in enumerate(r) if o and b >= 90), default=None)
+        if peak is None:
+            return None
+        faded = next((i for i in range(peak, len(r)) if not r[i][0] or r[i][1] <= 1), None)
+        return [] if faded is None else [x for x in r[faded:] if x[0] and x[1] > 1]
+
+
 def scenario(name, on):
     print(f"\n== {name}: " + ", ".join(f"{e.split('.')[1]} {'on' if on[e] else 'off'}" for e in LIGHTS))
     set_look(on)
+    d = dev()
+    watches = {e: Watch(d[e]) for e in LIGHTS if not on[e] and isinstance(d[e], lm.Nanoleaf)}
     ha("script/flash_lights", {"lights": LIGHTS, "color": FLASH, "hold": 1})
     time.sleep(3)  # restore fade
+    for eid, w in watches.items():
+        lit = w.lit_after_fading_out()
+        ok = lit == []
+        print(f"    {'PASS' if ok else 'FAIL'} {eid.split('.')[1]} no blink after fading out: "
+              + ("none" if ok else f"{len(lit or [])} lit readings, e.g. {(lit or ['no flash seen'])[:3]}"))
+        if not ok:
+            failures.append(f"{eid} blinked after fading out: {(lit or ['no flash seen'])[:3]}")
     d = dev()
     for eid in LIGHTS:
         got = d[eid].read()

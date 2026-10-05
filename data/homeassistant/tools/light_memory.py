@@ -22,8 +22,9 @@ addresses and credentials come from HA's own registries under /config/.storage.
 
 What the devices allow while staying off:
   Hue       colour and brightness: both kept (PUT without "on").
-  Nanoleaf  colour only: setting it switches the panel on unless brightness 0
-            is sent with it, and a panel at brightness 0 comes back at 100%.
+  Nanoleaf  colour only, and only by setting it while the panel is on at
+            brightness 1 (black) and then going to brightness 0; a panel at
+            brightness 0 comes back at 100%.
 """
 
 import http.client
@@ -165,23 +166,30 @@ class Nanoleaf:
                 "hue": {"value": saved["hue"]}, "sat": {"value": saved["sat"]}}
             # Come up from (nearly) dark in the saved colour, then fade to level.
             return [("/state", {**colour, "brightness": {"value": 1}}), ("/state", level)]
-        # Off: a colour on its own switches the panel on; sent with brightness 0
-        # in the same request it's stored and the panel stays dark.
-        dark = {"brightness": {"value": 0}}
+        # Off: the panel can't take a colour while off without lighting up at its
+        # last brightness (even with brightness 0 in the same request: measured,
+        # ~25 ms at full). So: brightness 1 (on, but black; a no-op after off()),
+        # then the colour, then brightness 0, which switches it off. It comes
+        # back on at 100%: Nanoleaf doesn't keep a brightness through 0.
+        steps = [("/state", {"brightness": {"value": 1}})]
         if "effect" in saved:
-            return [("/effects", {"select": saved["effect"]}), ("/state", dark)]
-        colour = {"ct": {"value": saved["ct"]}} if "ct" in saved else {
-            "hue": {"value": saved["hue"]}, "sat": {"value": saved["sat"]}}
-        return [("/state", {**colour, **dark})]
+            steps.append(("/effects", {"select": saved["effect"]}))
+        else:
+            steps.append(("/state", {"ct": {"value": saved["ct"]}} if "ct" in saved else {
+                "hue": {"value": saved["hue"]}, "sat": {"value": saved["sat"]}}))
+        steps.append(("/state", {"brightness": {"value": 0}}))
+        return steps
 
     def write(self, saved, fade):
         for path, body in self.bodies(saved, fade):
             self.http("PUT", self.base + path, body)
 
     def off_body(self, fade):
-        # Fading brightness to 0 ends with the panel off. It forgets its
-        # brightness that way, which is fine: restore() sets it explicitly.
-        return {"brightness": {"value": 0, "duration": int(fade)}}
+        # Fade to brightness 1, which looks black but leaves the panel on. A
+        # panel that's fully off jumps to its last brightness the instant it's
+        # given a colour, so restore() sets the saved colour at 1 and only then
+        # switches off. restore() sets brightness explicitly either way.
+        return {"brightness": {"value": 1, "duration": int(fade)}}
 
     def off(self, fade):
         self.http("PUT", self.base + "/state", self.off_body(fade))
