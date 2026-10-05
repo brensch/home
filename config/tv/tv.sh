@@ -25,12 +25,16 @@ packages() {
     /^[a-z]/ { if (want == "" || want == group) print $1 }' "$DIR/packages.txt"
 }
 
-# set_state on|off pkgs...: switch packages on or off, in one adb session
+# set_state on|off pkgs...: switch packages on or off. Batches of 20 per adb
+# session: one long command line for all 126 got silently cut off at the end.
 set_state() {
   local cmd; [ "$1" = on ] && cmd="pm enable" || cmd="pm disable-user --user 0"; shift
-  local script=""
-  for p in "$@"; do script+="$cmd $p; "; done
-  adb shell "'$script'"
+  local pkgs=("$@") i script
+  for ((i = 0; i < ${#pkgs[@]}; i += 20)); do
+    script=""
+    for p in "${pkgs[@]:i:20}"; do script+="$cmd $p; "; done
+    adb shell "'$script'"
+  done
 }
 
 case "${1:-}" in
@@ -38,8 +42,9 @@ case "${1:-}" in
     enabled=$(adb shell pm list packages -e | sed 's/package://' | tr -d '\r')
     for p in $(packages); do grep -qx "$p" <<<"$enabled" && echo "enabled again: $p"; done
     echo "checked $(packages | wc -l) packages" ;;
-  apply)           set_state off $(packages) | grep -v 'new state: disabled-user' || true
-                   echo "applied: $(packages | wc -l) packages disabled" ;;
+  apply)           out=$(set_state off $(packages))
+                   grep -v 'new state: disabled-user' <<<"$out" || true
+                   echo "disabled: $(grep -c 'new state: disabled-user' <<<"$out") of $(packages | wc -l)" ;;
   enable-updates)  set_state on $(packages updates) ;;
   disable-updates) set_state off $(packages updates) ;;
   adb)             shift; adb "$@" ;;

@@ -95,3 +95,73 @@ com.google.android.tts
 com.google.android.backdrop             # ambient-mode photos
 com.android.printspooler
 com.google.android.syncadapters.calendar
+
+[airplay]
+com.sony.dtv.airplayapp                 # AirPlay receiver (unused)
+
+[setup-and-backup]
+# First-run setup and backup. A factory reset re-enables everything, so setup still works then.
+com.google.android.tungsten.setupwraith # Google setup wizard
+com.sony.dtv.quicksetup                 # Sony initial setup
+com.sony.dtv.QuickSetupCustomizer
+com.google.android.partnersetup
+com.google.android.onetimeinitializer
+com.android.managedprovisioning
+android.autoinstalls.config.sony.bravia # Sony's list of promo apps to auto-install
+com.android.backupconfirm
+com.android.sharedstoragebackup
+com.android.wallpaperbackup
+com.android.localtransport
+
+[broadcast]
+# Antenna-broadcast plumbing (no antenna). The clock still sets itself over the internet.
+com.sony.dtv.broadcastservicesetup
+com.sony.dtv.broadcastclock.broadcastrequirementcontrol
+com.sony.dtv.broadcastclock.clocksyncservice
+com.sony.dtv.tvsettingsbroadcast
+com.sony.dtv.parentalcontrolsettings    # broadcast content ratings
+
+[sony-extras-2]
+com.sony.dtv.ecodashboard
+com.sony.dtv.eulaviewer
+com.sony.dtv.softwarelicense
+com.sony.dtv.sonybugreportsys
+com.sony.dtv.sonyloglevelsettingsys
+com.sony.dtv.servicemode                # service menu
+com.sony.dtv.hrtfsettings               # headphone spatial audio
+com.sony.dtv.acousticautocalibration    # one-off speaker calibration
+com.sony.dtv.tvpositionscreen           # one-off "where's the TV" setup screen
+com.sony.dtv.seconddispsetting
+com.sony.dtv.smartmediaapp              # USB media player
+com.sony.dtv.osat.music
+com.sony.dtv.hddmgr                     # USB recording drive manager
+com.sony.dtv.usbmsgservice              # "USB device connected" popups
+com.sony.dtv.tvlaunchercustomizer       # customises the (disabled) Google launcher
+com.sony.dtv.tvlaunchercustomizer.overlay.apporder
+com.sony.dtv.seeds.auth                 # Sony account auth for the (disabled) Sony cloud
+com.sony.dtv.da.service
+
+[b2b-rest]
+# Hotel/pro leftovers; b2b.frameworkextension and b2b.deviceadminsettings stay.
+com.sony.dtv.b2b.adminpassword
+com.sony.dtv.b2b.ipcontrolsettings
+com.sony.dtv.b2b.noderuntime.normal
+com.sony.dtv.b2b.noderuntime.privilege
+com.sony.dtv.b2b.noderuntimeextension.bpk
+com.sony.dtv.b2b.noderuntimeextension.node_20_11_1
+com.sony.dtv.b2b.webappruntimedrm
+
+[android-extras]
+com.android.dreams.basic                # screensaver
+com.android.soundpicker
+com.android.htmlviewer
+com.android.dynsystem
+com.android.hotspot2.osulogin
+com.android.captiveportallogin          # hotel Wi-Fi login pages
+com.android.vpndialogs
+com.android.pacprocessor
+com.android.proxyhandler
+com.android.settings.intelligence       # Settings search suggestions
+com.android.certinstaller
+com.android.statementservice            # web-link verification for apps; crashed on boot (couldn't open its database)
+com.mediatek.dmagent                    # MediaTek media-server agent; crashed on boot once DLNA/USB media were off

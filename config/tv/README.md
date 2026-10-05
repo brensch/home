@@ -1,7 +1,7 @@
 # Living-room TV (Sony Bravia XBR-75X900H)
 
 Shows up as "BRAVIA VH1", Android TV 12, at 192.168.1.14 (reserved on the router).
-It's run as an appliance: 71 of Sony's and Google's packages are disabled
+It's run as an appliance: 126 of Sony's, Google's and Android's packages are disabled
 (`packages.txt`), including everything that updates it, so it stays exactly as it is.
 Nothing is uninstalled; a factory reset or `tv.sh adb shell pm enable <pkg>` brings
 anything back.
@@ -81,13 +81,26 @@ See `packages.txt` for every package with a one-line reason. By group:
 | no-camera | Gesture/presence/distance features for Sony's optional camera | 5 |
 | hotel-and-pro | Hotel mode, RS-232, vendor protocol, pro settings | 5 |
 | extras | Help, privacy notices, smart-speaker settings, TalkBack, text-to-speech, ambient photos, printing, calendar sync | 11 |
+| airplay | AirPlay receiver | 1 |
+| setup-and-backup | Google/Sony setup wizards, partner/one-time setup, Sony's promo auto-installer, backup services (a factory reset re-enables them) | 11 |
+| broadcast | Antenna channel setup, broadcast clock sync, broadcast ratings | 5 |
+| sony-extras-2 | Eco dashboard, licences, bug-report/log tools, service menu, headphone spatial audio, one-off calibration screens, USB media player/recorder/popups, launcher customiser, Sony account auth, da.service | 18 |
+| b2b-rest | Hotel/pro leftovers: admin password, IP control, Node.js web runtime | 7 |
+| android-extras | Screensaver, sound picker, HTML viewer, captive-portal/hotspot login, VPN/proxy dialogs, Settings search suggestions, certificate installer, link verification; MediaTek media-server agent (both crashed at boot once their dependencies were off) | 13 |
 
 **Kept**, because something you use needs them: picture/audio/inputs and Sony's TV
-app (`tvx`, plus the basic tuner it expects), Google Play Services (YouTube sign-in,
-Chromecast), Chromecast (`mediashell`), the Android TV Remote service, AirPlay,
-Bravia Sync (HDMI-CEC), the keyboard, Bluetooth, and the core b2b framework extension.
+app (`tvx`, plus the basic tuner it expects), Settings, Google Play Services (YouTube
+sign-in, Chromecast), Chromecast (`mediashell`), the Android TV Remote service, Bravia
+Sync (HDMI-CEC, for a soundbar/console), the keyboard, Bluetooth, the core
+Android/Sony/MediaTek system, and the b2b framework extension and device-admin settings.
 Kept apps: YouTube, YouTube TV, Stremio, Rumble, Spotify, Projectivy.
+
+**Also set:** Android animation speed 0.5x (window, transition and animator scales),
+for snappier menus. Undo: `tv.sh adb shell settings put global window_animation_scale 1`
+(and the same for `transition_animation_scale` and `animator_duration_scale`).
 
 **Why:** the TV has 3 GB of RAM. Before (2026-10-05) it had ~380 MB available with
 swap full, so Android kept killing and relaunching apps; CPU was mostly idle. After
-disabling all this and a restart: ~1.5 GB available, swap empty.
+disabling all this and a restart: ~1.46 GB available, swap empty, and a boot with no
+crashes. Checked after each round: home (Projectivy), Settings, all five HDMI inputs,
+YouTube, Chromecast, the Android TV Remote service and Home Assistant's connection.
