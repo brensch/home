@@ -22,6 +22,14 @@ ADB: Developer options → USB debugging on the TV, then from the server
 | com.google.android.feedback | Google feedback |
 | com.google.android.play.games | Play Games |
 | com.google.android.videos | Google Play Movies / Google TV app |
+| com.netflix.ninja, com.netflix.partner.ncm | Netflix and its Sony integration component (unused) |
+| com.amazon.amazonvideo.livingroom | Prime Video (unused) |
+| com.apple.atve.sony.appletv | Apple TV app (unused; AirPlay is separate and still on) |
+| com.disney.disneyplus | Disney+ (unused) |
+| com.google.android.youtube.tvmusic | YouTube Music (unused) |
+| com.google.android.katniss | Google app: Assistant and voice search on the remote's mic button |
+
+Kept as apps: YouTube, YouTube TV, Stremio, Rumble, Spotify (and Projectivy).
 
 Already disabled by Sony: com.sony.dtv.homekit, com.sony.dtv.livingfit, com.sony.dtv.b2b.softap.
 
