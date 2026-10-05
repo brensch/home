@@ -107,3 +107,18 @@ views:
             name: Piano
             icon: mdi:piano
             tap_action: {action: toggle}
+          - type: heading
+            heading: Power now
+            heading_style: subtitle
+            icon: mdi:flash
+          - {type: tile, entity: sensor.media_power, name: Home server, icon: mdi:server}
+          - {type: tile, entity: sensor.desk_power, name: Desk, icon: mdi:desktop-tower-monitor}
+          - {type: tile, entity: sensor.fridge_power, name: Fridge, icon: mdi:fridge}
+          - {type: tile, entity: sensor.piano_power, name: Piano, icon: mdi:piano}
+          - type: history-graph
+            title: Last 24 hours, W
+            hours_to_show: 24
+            entities:
+              - {entity: sensor.desk_power, name: Desk}
+              - {entity: sensor.media_power, name: Server}
+              - {entity: sensor.fridge_power, name: Fridge}

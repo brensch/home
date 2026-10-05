@@ -153,12 +153,17 @@ views:
             entity: sensor.fridge_power
             name: Fridge
             icon: mdi:fridge
-            tap_action: {action: navigate, navigation_path: /energy-dash/energy}
+            tap_action: {action: navigate, navigation_path: /system-dash/system}
           - type: tile
             entity: sensor.elec_account_3015750579_current_bill_electric_cost_to_date
             name: Bill so far
             icon: mdi:cash
-            tap_action: {action: navigate, navigation_path: /energy-dash/energy}
+            tap_action: {action: navigate, navigation_path: /energy}
+          - type: tile
+            entity: sensor.elec_account_3015750579_current_bill_electric_forecasted_cost
+            name: Bill forecast
+            icon: mdi:cash-clock
+            tap_action: {action: navigate, navigation_path: /energy}
           - type: todo-list
             entity: todo.shopping_list
             title: Shopping list

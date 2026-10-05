@@ -88,7 +88,8 @@ shell_command:
 
 # Dashboards defined as YAML in git (dashboards/), one job each:
 #   Home = daily command center (default); Rooms = every bulb and scene;
-#   Energy = power and the bill; System = upkeep, automations, plug power;
+#   System = upkeep, automations, plug power and live draw; usage and cost are
+#   on HA's built-in Energy dashboard;
 #   Demo = card styles to choose from. The old storage Overview is hidden.
 lovelace:
   dashboards:
@@ -104,12 +105,6 @@ lovelace:
       icon: mdi:floor-plan
       show_in_sidebar: true
       filename: dashboards/rooms.yaml
-    energy-dash:
-      mode: yaml
-      title: Energy use
-      icon: mdi:lightning-bolt
-      show_in_sidebar: true
-      filename: dashboards/energy.yaml
     system-dash:
       mode: yaml
       title: System
