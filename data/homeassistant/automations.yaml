@@ -300,6 +300,9 @@
   - trigger: state
     entity_id: media_player.sony_xbr_75x900h
     to: 'on'
+    not_from:
+    - unknown
+    - unavailable
     for: 00:00:10
     id: tv_on
   - trigger: state
