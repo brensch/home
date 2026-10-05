@@ -69,7 +69,7 @@ switch:
     name: "Relay"
     pin: GPIO12
     id: relay
-    restore_mode: RESTORE_DEFAULT_OFF
+    restore_mode: RESTORE_DEFAULT_ON
 
 # --- HARDWARE: LED ---
 status_led:
