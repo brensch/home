@@ -330,6 +330,7 @@
   # triggers, and the second run must see that the first already restored.
   - variables:
       not_watching:
+      - com.spocky.projengmenu          # Projectivy, the home screen since 2026-10-05
       - com.google.android.tvlauncher
       - com.google.android.apps.tv.launcherx
       - com.android.tv.settings
