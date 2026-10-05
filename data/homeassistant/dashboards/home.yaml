@@ -96,7 +96,6 @@ views:
             tap_action:
               action: perform-action
               perform_action: script.all_lights_off
-              confirmation: {text: "Turn off every light in the house?"}
             grid_options: {columns: 4, rows: 3}
       - type: grid
         cards:
