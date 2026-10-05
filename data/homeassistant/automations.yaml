@@ -391,3 +391,23 @@
     target:
       entity_id: light.balcony
   mode: single
+- id: kitchen_off_when_tv_plays
+  alias: Kitchen off when the TV plays
+  description: The moment the TV starts or resumes playing, turn the kitchen lights off with no fade.
+  # media_player.tv_cast (Google Cast) pushes playing/paused for YouTube and other
+  # Cast-based apps, including ones opened with the TV remote. Android TV Remote
+  # (media_player.tv) only knows which app is open, not whether it's playing.
+  triggers:
+  - trigger: state
+    entity_id: media_player.tv_cast
+    to: playing
+    not_from:
+    - unknown
+    - unavailable
+  actions:
+  - action: light.turn_off
+    target:
+      entity_id: light.kitchen_all
+    data:
+      transition: 0
+  mode: single
