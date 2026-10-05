@@ -22,34 +22,36 @@
       - kitchen
       - living_room
   mode: single
-- id: '1755055880057'
-  alias: Alyssa arrival flash (green)
-  use_blueprint:
-    path: brensch/arrival_flash.yaml
-    input:
-      arrival_person: person.alyssa
-      flash_color:
-      - 0
-      - 255
-      - 0
-      flash_lights:
+- id: arrival_flash
+  alias: Arrival flash
+  description: Flash the kitchen and living room in the arriver's colour, then put the lights back.
+  # not_from keeps an HA restart (unknown/unavailable -> home) from flashing.
+  triggers:
+  - trigger: state
+    entity_id: person.alyssa
+    to: home
+    not_from:
+    - unknown
+    - unavailable
+    variables:
+      color: [0, 255, 0]
+  - trigger: state
+    entity_id: person.brend
+    to: home
+    not_from:
+    - unknown
+    - unavailable
+    variables:
+      color: [255, 0, 0]
+  actions:
+  - action: script.flash_lights
+    data:
+      lights:
       - light.kitchen_all
       - light.living_room_all
-      flash_lock: input_boolean.arrival_flash_lock
-- id: '1755145185715'
-  alias: Brend arrival flash (red)
-  use_blueprint:
-    path: brensch/arrival_flash.yaml
-    input:
-      arrival_person: person.brend
-      flash_color:
-      - 255
-      - 0
-      - 0
-      flash_lights:
-      - light.kitchen_all
-      - light.living_room_all
-      flash_lock: input_boolean.arrival_flash_lock
+      color: '{{ color }}'
+  # flash_lights queues overlapping calls itself; parallel just hands them over.
+  mode: parallel
 - id: '1755761528874'
   alias: Kitchen hue button
   description: Button 4 ("love button") on the kitchen dimmer notifies both phones.

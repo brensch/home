@@ -12,3 +12,66 @@ kitchen_light_delayed_off:
       target:
         entity_id: light.kitchen
   mode: restart
+
+# Show a colour on some lights once, then put every bulb back exactly as it was.
+# Groups (YAML light groups and Hue rooms) are expanded to their bulbs first, so
+# the restore keeps each bulb's own state instead of the room's average. Only
+# colour-capable bulbs that are online take part; white-only bulbs are left alone.
+# Queued: overlapping calls take turns, so one flash never snapshots another's colour.
+flash_lights:
+  alias: Flash lights
+  mode: queued
+  fields:
+    lights:
+      description: Lights or light groups to flash.
+      required: true
+      selector:
+        entity:
+          multiple: true
+          filter:
+            domain: light
+    color:
+      description: RGB colour to show.
+      required: true
+      selector:
+        color_rgb: {}
+    hold:
+      description: Seconds to hold the colour before restoring.
+      default: 2
+      selector:
+        number:
+          min: 1
+          max: 30
+  sequence:
+    - variables:
+        bulbs: >
+          {% set ns = namespace(out=[]) %}
+          {% for l in expand(lights) %}
+            {% set members = state_attr(l.entity_id, 'entity_id') %}
+            {% for b in (members | list if members else [l.entity_id]) %}
+              {% set modes = state_attr(b, 'supported_color_modes') or [] %}
+              {% if has_value(b) and modes | select('in', ['hs', 'xy', 'rgb', 'rgbw', 'rgbww']) | list %}
+                {% set ns.out = ns.out + [b] %}
+              {% endif %}
+            {% endfor %}
+          {% endfor %}
+          {{ ns.out | unique | list }}
+    - condition: "{{ bulbs | count > 0 }}"
+    - action: scene.create
+      data:
+        scene_id: flash_lights_before
+        snapshot_entities: "{{ bulbs }}"
+    - action: light.turn_on
+      target:
+        entity_id: "{{ bulbs }}"
+      data:
+        rgb_color: "{{ color }}"
+        brightness_pct: 100
+        transition: 0
+    - delay:
+        seconds: "{{ hold | default(2) }}"
+    - action: scene.turn_on
+      target:
+        entity_id: scene.flash_lights_before
+      data:
+        transition: 1
