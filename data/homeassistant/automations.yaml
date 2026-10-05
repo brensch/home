@@ -295,7 +295,7 @@
   mode: single
 - id: movie_mode
   alias: Movie mode
-  description: After dark, a video app or input on the TV dims the living room; back to the home screen, music, or TV off puts the lights back.
+  description: After dark, a video app or input on the TV dims the living room; the home screen or music puts the lights back; TV off turns the room on.
   # media_player.tv (Android TV Remote) pushes power and the foreground app the
   # moment they change. The 5s settle keeps flicking between apps from strobing.
   triggers:
@@ -343,6 +343,34 @@
           entity_id: scene.living_room_dimmed
         data:
           transition: 2
+    # TV off after dark: the room comes back on. If movie mode dimmed it, that
+    # means exactly as it was before the film; otherwise just turn the room on.
+    - conditions:
+      - condition: state
+        entity_id: media_player.tv
+        state: 'off'
+      - condition: state
+        entity_id: sun.sun
+        state: below_horizon
+      sequence:
+      - if:
+        - "{{ dimmed }}"
+        then:
+        - action: scene.turn_on
+          target:
+            entity_id: scene.movie_mode_before
+          data:
+            transition: 2
+        - action: scene.delete
+          target:
+            entity_id: scene.movie_mode_before
+        else:
+        - action: light.turn_on
+          target:
+            entity_id: light.living_room_all
+          data:
+            transition: 2
+    # Back to the home screen or music with the TV still on.
     - conditions:
       - "{{ not watching and dimmed }}"
       sequence:
