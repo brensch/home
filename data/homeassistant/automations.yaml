@@ -145,3 +145,242 @@
       button_down: event.bedroom_switch_button_3
       room_lights:
         entity_id: light.bedroom
+- id: downtime_report
+  alias: Downtime report
+  description: Stamp a heartbeat every 5 minutes; on startup after 10+ minutes down, say how long and what came back.
+  triggers:
+  - trigger: time_pattern
+    minutes: /5
+    id: beat
+  - trigger: homeassistant
+    event: start
+    id: start
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: start
+      sequence:
+      # Read the old heartbeat before anything overwrites it.
+      - variables:
+          last_seen: "{{ state_attr('input_datetime.server_heartbeat', 'timestamp') }}"
+      - condition: "{{ last_seen is number and now().timestamp() - last_seen > 600 }}"
+      # Give the plugs and lights a few minutes to reconnect before reporting.
+      - delay: 00:03:00
+      - action: notify.send_message
+        target:
+          entity_id:
+          - notify.schlixel
+          - notify.alyssas_iphone
+        data:
+          title: Home server was down
+          message: >
+            {% set mins = ((now().timestamp() - last_seen) / 60) | int %}
+            {% set fridge = states('sensor.fridge_power') | float(0) %}
+            {% set off = states.switch | selectattr('entity_id', 'search', '_relay$') | rejectattr('state', 'eq', 'on')
+               | map(attribute='entity_id') | map('replace', 'switch.', '') | map('replace', '_relay', '') | list %}
+            {% set dark = states.light | rejectattr('attributes.entity_id', 'defined') | selectattr('state', 'eq', 'unavailable')
+               | map(attribute='name') | list %}
+            Down {{ mins // 60 }}h {{ mins % 60 }}m, from {{ last_seen | timestamp_custom('%a %H:%M') }}.
+            Fridge: {{ ('on, cooling (' ~ fridge | round(0) | int ~ ' W)' if fridge > 20 else 'on, between cooling cycles')
+                       if is_state('switch.fridge_relay', 'on') else 'OFF!' }}.
+            {{ 'Plugs off: ' ~ off | join(', ') ~ '.' if off else 'All plugs on.' }}
+            {{ 'Lights offline: ' ~ dark | join(', ') ~ '.' if dark else '' }}
+  - action: input_datetime.set_datetime
+    target:
+      entity_id: input_datetime.server_heartbeat
+    data:
+      timestamp: "{{ now().timestamp() }}"
+  mode: single
+- id: fridge_watchdog
+  alias: Fridge watchdog
+  description: Normal is ~1h of cooling then 0.5-1.5h off. Warn when it stops cycling, runs nonstop, or its plug is off or offline.
+  triggers:
+  - trigger: numeric_state
+    entity_id: sensor.fridge_power
+    below: 20
+    for: 03:00:00
+    variables:
+      problem: hasn't run its compressor in 3 hours. Is it warm inside?
+  - trigger: numeric_state
+    entity_id: sensor.fridge_power
+    above: 20
+    for: 04:00:00
+    variables:
+      problem: has been cooling nonstop for 4 hours. Door left open?
+  - trigger: state
+    entity_id: switch.fridge_relay
+    to: 'off'
+    for: 00:01:00
+    variables:
+      problem: plug is switched OFF.
+  - trigger: state
+    entity_id: switch.fridge_relay
+    to: unavailable
+    for: 00:15:00
+    variables:
+      problem: plug has been offline for 15 minutes.
+  actions:
+  - action: notify.send_message
+    target:
+      entity_id:
+      - notify.schlixel
+      - notify.alyssas_iphone
+    data:
+      title: Fridge
+      message: The fridge {{ problem }}
+  mode: queued
+- id: weekly_battery_report
+  alias: Weekly battery report
+  description: Sunday morning, list device batteries under 30% (phones excluded).
+  triggers:
+  - trigger: time
+    at: '10:00:00'
+  conditions:
+  - condition: time
+    weekday: sun
+  actions:
+  - variables:
+      lines: >
+        {% set ns = namespace(low=[]) %}
+        {% for s in states.sensor | selectattr('attributes.device_class', 'eq', 'battery')
+           | rejectattr('entity_id', 'in', integration_entities('mobile_app')) | selectattr('state', 'is_number') %}
+          {% if s.state | int < 30 %}{% set ns.low = ns.low + [(s.state | int, s.name | replace(' Battery', ''))] %}{% endif %}
+        {% endfor %}
+        {% for pct, name in ns.low | sort %}{{ name }}: {{ pct }}%{{ '\n' if not loop.last }}{% endfor %}
+  - condition: "{{ lines | trim | length > 0 }}"
+  - action: notify.send_message
+    target:
+      entity_id: notify.schlixel
+    data:
+      title: Batteries to replace
+      message: "{{ lines | trim }}"
+  mode: single
+- id: wake_up_light
+  alias: Wake-up light
+  description: Fade the bedroom up over the 20 minutes before Brend's phone alarm.
+  triggers:
+  - trigger: time
+    at:
+      entity_id: sensor.schlixel_next_alarm
+      offset: -00:20:00
+  conditions:
+  - condition: state
+    entity_id: person.brend
+    state: home
+  # Only real clock alarms, not reminders other apps schedule.
+  - condition: state
+    entity_id: sensor.schlixel_next_alarm
+    attribute: Package
+    state: com.google.android.deskclock
+  # Someone's already up with the lights on; leave them.
+  - condition: state
+    entity_id: light.bedroom
+    state: 'off'
+  actions:
+  - action: light.turn_on
+    target:
+      entity_id: light.bedroom
+    data:
+      brightness_pct: 1
+      color_temp_kelvin: 2200
+      transition: 0
+  - action: light.turn_on
+    target:
+      entity_id: light.bedroom
+    data:
+      brightness_pct: 80
+      color_temp_kelvin: 4000
+      transition: 1200
+  mode: single
+- id: movie_mode
+  alias: Movie mode
+  description: TV on after dark dims the living room; TV off puts the lights back as they were.
+  triggers:
+  - trigger: state
+    entity_id: media_player.sony_xbr_75x900h
+    to: 'on'
+    for: 00:00:10
+    id: tv_on
+  - trigger: state
+    entity_id: media_player.sony_xbr_75x900h
+    from: 'on'
+    to: 'off'
+    for: 00:00:10
+    id: tv_off
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: tv_on
+      - condition: state
+        entity_id: sun.sun
+        state: below_horizon
+      - condition: state
+        entity_id: light.living_room
+        state: 'on'
+      sequence:
+      - action: scene.create
+        data:
+          scene_id: movie_mode_before
+          snapshot_entities: >
+            {{ (state_attr('light.living_room', 'entity_id') | list
+                + ['light.lines_desk', 'light.tree', 'light.garland'])
+               | select('has_value') | list }}
+      - action: scene.turn_on
+        target:
+          entity_id: scene.living_room_dimmed
+        data:
+          transition: 2
+    - conditions:
+      - condition: trigger
+        id: tv_off
+      # Only restore if movie mode actually dimmed the room.
+      - condition: template
+        value_template: "{{ 'scene.movie_mode_before' in states.scene | map(attribute='entity_id') | list }}"
+      sequence:
+      # If someone turned the room off during the film, don't light it back up.
+      - if:
+        - condition: state
+          entity_id: light.living_room
+          state: 'on'
+        then:
+        - action: scene.turn_on
+          target:
+            entity_id: scene.movie_mode_before
+          data:
+            transition: 2
+      - action: scene.delete
+        target:
+          entity_id: scene.movie_mode_before
+  mode: queued
+- id: balcony_motion_light
+  alias: Balcony motion light
+  description: After dark, outdoor motion turns the balcony on until 3 minutes after motion stops. Leaves it alone if it was already on.
+  triggers:
+  - trigger: state
+    entity_id: binary_sensor.hue_outdoor_motion_sensor_1_motion
+    to: 'on'
+  conditions:
+  - condition: state
+    entity_id: sun.sun
+    state: below_horizon
+  - condition: state
+    entity_id: light.balcony
+    state: 'off'
+  actions:
+  - action: light.turn_on
+    target:
+      entity_id: light.balcony
+    data:
+      brightness_pct: 100
+  - wait_for_trigger:
+    - trigger: state
+      entity_id: binary_sensor.hue_outdoor_motion_sensor_1_motion
+      to: 'off'
+      for: 00:03:00
+    timeout: 01:00:00
+  - action: light.turn_off
+    target:
+      entity_id: light.balcony
+  mode: single

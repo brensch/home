@@ -70,3 +70,12 @@ light:
       - light.lines_desk
       - light.tree
       - light.garland
+
+# Last time the server was alive, stamped every 5 minutes by the "Downtime
+# report" automation. HA restores it after a restart, so on boot the gap
+# between it and now is how long the server (usually: the power) was out.
+input_datetime:
+  server_heartbeat:
+    name: Server heartbeat
+    has_date: true
+    has_time: true
