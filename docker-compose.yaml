@@ -24,6 +24,26 @@ services:
       - home_default
   # Caddy (reverse proxy) is optional and starts after HA
 
+  # MQTT, for the plants service (~/plants) to announce each plant as a device to Home Assistant. Logins only
+  # (config/mosquitto/passwd: homeassistant, plants), an ACL, and no published port: home_default only.
+  mosquitto:
+    image: eclipse-mosquitto:2@sha256:38c0da4f2ef84284d47b3b3eeea1cb3bdeabe81ee10caf0cd5c5ff61ee3ea408
+    container_name: mosquitto
+    user: "${UID}:${GID}"
+    volumes:
+      - ./config/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./config/mosquitto/passwd:/mosquitto/config/passwd:ro
+      - ./config/mosquitto/acl:/mosquitto/config/acl:ro
+      - ./data/mosquitto/data:/mosquitto/data
+    restart: unless-stopped
+    networks:
+      - home_default
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   caddy:
     # Pinned by digest (the 2026-09-17 rebuild); re-pull on purpose, not by accident.
     image: caddy:2.11.4-alpine@sha256:6aeddd44c3078b0f9a35206472a11420648a79c184603ef95957d0a20044cb2b
@@ -38,6 +58,7 @@ services:
       - DOMAIN=${DOMAIN}
       - ESPHOME_USERNAME=${ESPHOME_USERNAME}
       - ESPHOME_PASSWORD=${ESPHOME_PASSWORD}
+      - PLANTS_WEB_HASH=${PLANTS_WEB_HASH}
     volumes:
       - ./config/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./data/christmas-party:/srv/christmas-party

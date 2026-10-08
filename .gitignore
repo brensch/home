@@ -31,3 +31,6 @@ data/homeassistant/ip_bans.yaml
 
 # Dashboard screenshots (tests/dashboard_shots.py output)
 tests/shots/
+
+# Broker password hashes (users: homeassistant, plants)
+config/mosquitto/passwd

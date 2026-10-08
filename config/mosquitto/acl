@@ -1,0 +1,9 @@
+# Home Assistant sees everything; plants may only touch its own topics and Home Assistant's device discovery
+# (mosquitto has no prefix wildcards, so that is all of homeassistant/device/, which nothing else uses).
+user homeassistant
+topic readwrite #
+
+user plants
+topic readwrite plants/#
+topic readwrite homeassistant/device/#
+topic read homeassistant/status

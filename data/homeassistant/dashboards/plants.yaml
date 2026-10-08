@@ -1,0 +1,6 @@
+# The balcony plants (~/plants). Built when the page loads by www/plants-strategy.js (copied from
+# ~/plants/ha/plants-strategy.js) out of Home Assistant's own cards, for whatever plants exist: every plant's status
+# on one timeline, every plant's soil moisture on one chart, then a section per plant.
+strategy:
+  type: custom:plants
+  hours_to_show: 168

@@ -152,3 +152,29 @@ house.{$DOMAIN} {
 		X-Robots-Tag "noindex, nofollow, noarchive"
 	}
 }
+
+# The plant monitor (~/plants, its own repository and container), on home_default. The app has no login of its own
+# and its page can start a round, so Caddy asks for one: user "plants", the bcrypt hash in .env (PLANTS_WEB_HASH),
+# the password in ~/plants/secrets/web_password. Home Assistant's dashboard may frame it.
+plants.{$DOMAIN} {
+	encode gzip
+
+	basic_auth {
+		plants {$PLANTS_WEB_HASH}
+	}
+
+	reverse_proxy plants:8097 {
+		transport http {
+			compression off
+		}
+		header_down -Server
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		Referrer-Policy no-referrer
+		X-Content-Type-Options nosniff
+		Content-Security-Policy "frame-ancestors 'self' https://hass.{$DOMAIN}"
+		X-Robots-Tag "noindex, nofollow, noarchive"
+	}
+}
