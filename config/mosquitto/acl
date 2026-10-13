@@ -7,3 +7,7 @@ user plants
 topic readwrite plants/#
 topic readwrite homeassistant/device/#
 topic read homeassistant/status
+
+# Frigate publishes detections, events and snapshots under frigate/ (Home Assistant reads them as MQTT entities).
+user frigate
+topic readwrite frigate/#

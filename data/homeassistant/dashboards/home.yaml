@@ -19,10 +19,10 @@ views:
         show_state: true
       - type: entity
         entity: weather.forecast_home
-      - type: entity
+      - type: custom:temperature-badge
         entity: sensor.hue_outdoor_motion_sensor_1_temperature
         name: Outside
-        icon: mdi:thermometer
+        unit: both
       # Alerts: only shown when something needs attention.
       - type: entity
         entity: switch.fridge_relay
@@ -39,7 +39,7 @@ views:
         name: Front door switch battery
         show_name: true
         color: red
-        tap_action: {action: navigate, navigation_path: /system-dash/system}
+        tap_action: {action: navigate, navigation_path: /health-dash/health}
         visibility:
           - condition: numeric_state
             entity: sensor.front_door_switch_battery
@@ -49,7 +49,7 @@ views:
         name: Kitchen switch battery
         show_name: true
         color: red
-        tap_action: {action: navigate, navigation_path: /system-dash/system}
+        tap_action: {action: navigate, navigation_path: /health-dash/health}
         visibility:
           - condition: numeric_state
             entity: sensor.kitchen_switch_battery
@@ -59,7 +59,7 @@ views:
         name: Bedroom switch battery
         show_name: true
         color: red
-        tap_action: {action: navigate, navigation_path: /system-dash/system}
+        tap_action: {action: navigate, navigation_path: /health-dash/health}
         visibility:
           - condition: numeric_state
             entity: sensor.bedroom_switch_battery
@@ -69,7 +69,7 @@ views:
         name: Outdoor sensor battery
         show_name: true
         color: red
-        tap_action: {action: navigate, navigation_path: /system-dash/system}
+        tap_action: {action: navigate, navigation_path: /health-dash/health}
         visibility:
           - condition: numeric_state
             entity: sensor.hue_outdoor_motion_sensor_1_battery
@@ -98,6 +98,19 @@ views:
       - type: grid
         cards:
           - type: heading
+            heading: Camera
+            icon: mdi:cctv
+          # The balcony camera via Frigate, live. The card plays the 720p channel (~2 Mb/s); tapping opens the 4K one.
+          # 4K in the card froze on the phone: ~16 Mb/s, and one lost packet of a keyframe stalls it until the next.
+          - type: picture-entity
+            entity: camera.balcony
+            camera_view: live
+            show_name: false
+            show_state: false
+            tap_action: {action: more-info, entity: camera.balcony_4k}
+      - type: grid
+        cards:
+          - type: heading
             heading: TV
             icon: mdi:television
           - type: tile
@@ -120,14 +133,29 @@ views:
             entity: sensor.fridge_power
             name: Fridge
             icon: mdi:fridge
-            tap_action: {action: navigate, navigation_path: /system-dash/system}
+            tap_action: {action: more-info}
           - type: tile
             entity: sensor.elec_account_3015750579_current_bill_electric_cost_to_date
             name: Bill so far
             icon: mdi:cash
-            tap_action: {action: navigate, navigation_path: /energy}
+            tap_action: {action: more-info}
           - type: tile
             entity: sensor.elec_account_3015750579_current_bill_electric_forecasted_cost
             name: Bill forecast
             icon: mdi:cash-clock
-            tap_action: {action: navigate, navigation_path: /energy}
+            tap_action: {action: more-info}
+
+          - type: heading
+            heading: Network
+            heading_style: subtitle
+            icon: mdi:router-wireless
+          - type: tile
+            entity: binary_sensor.internet_connection
+            name: Internet
+            icon: mdi:web
+            tap_action: {action: more-info}
+          - type: tile
+            entity: sensor.lo_fi_clients
+            name: Devices on lo-fi
+            icon: mdi:wifi
+            tap_action: {action: more-info}

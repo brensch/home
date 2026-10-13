@@ -1,0 +1,68 @@
+# Frigate's detections as plain MQTT entities (Frigate publishes under frigate/; see data/frigate/config/config.yml).
+# One block per camera; there is one camera, "balcony".
+binary_sensor:
+  - name: Balcony person
+    unique_id: frigate_balcony_person
+    default_entity_id: binary_sensor.balcony_person
+    state_topic: frigate/balcony/person
+    value_template: "{{ 'ON' if value | int(0) > 0 else 'OFF' }}"
+    device_class: occupancy
+    availability_topic: frigate/available
+    payload_available: online
+    payload_not_available: offline
+  # Whether Frigate is getting video from the camera (its stats, every minute): the camera's "connected" status.
+  - name: Balcony camera
+    unique_id: frigate_balcony_camera_online
+    default_entity_id: binary_sensor.balcony_camera
+    state_topic: frigate/stats
+    value_template: "{{ 'ON' if value_json.cameras.balcony.camera_fps | float(0) > 0 else 'OFF' }}"
+    device_class: connectivity
+    expire_after: 180
+    availability_topic: frigate/available
+    payload_available: online
+    payload_not_available: offline
+  - name: Balcony motion
+    unique_id: frigate_balcony_motion
+    default_entity_id: binary_sensor.balcony_motion
+    state_topic: frigate/balcony/motion
+    device_class: motion
+    availability_topic: frigate/available
+    payload_available: online
+    payload_not_available: offline
+
+sensor:
+  - name: Balcony people
+    unique_id: frigate_balcony_people
+    default_entity_id: sensor.balcony_people
+    state_topic: frigate/balcony/person
+    value_template: "{{ value | int(0) }}"
+    state_class: measurement
+    icon: mdi:account-multiple
+    availability_topic: frigate/available
+    payload_available: online
+    payload_not_available: offline
+  # Who the last person on the balcony was, once Frigate's face recognition knows their face ("Unknown" otherwise).
+  - name: Balcony last person
+    unique_id: frigate_balcony_last_person
+    default_entity_id: sensor.balcony_last_person
+    state_topic: frigate/events
+    value_template: >-
+      {% if value_json.after.camera == 'balcony' and value_json.after.label == 'person' %}
+        {{ (value_json.after.sub_label[0] if value_json.after.sub_label else 'Unknown') | title }}
+      {% else %}{{ this.state }}{% endif %}
+    # The id of the last finished person event (set when it ends, so its preview is complete), for
+    # image.balcony_last_person_clip.
+    json_attributes_topic: frigate/events
+    json_attributes_template: >-
+      {% if value_json.type == 'end' and value_json.after.camera == 'balcony' and value_json.after.label == 'person' %}
+        {{ {'event': value_json.after.id} | tojson }}
+      {% else %}{{ {'event': this.attributes.get('event')} | tojson }}{% endif %}
+    icon: mdi:account-question
+
+image:
+  # The latest snapshot of a person on the balcony.
+  - name: Balcony last person snapshot
+    unique_id: frigate_balcony_person_snapshot
+    default_entity_id: image.balcony_last_person_snapshot
+    image_topic: frigate/balcony/person/snapshot
+    content_type: image/jpeg

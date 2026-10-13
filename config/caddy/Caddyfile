@@ -1,26 +1,13 @@
-# Global: HTTP/3 off. UDP 443 belongs to the snekgame WebTransport server,
-# so advertising h3 would send browsers' page loads to the wrong endpoint.
+# Global: HTTP/3 off (UDP 443 was the snekgame WebTransport server's; snek,
+# the blog, www and ppp now live on the schlift.com VM).
+#
+# Certificates come from Let's Encrypt over Cloudflare DNS (DNS-01) for every
+# site, so nothing needs ports 80/443 open to the internet.
 {
 	servers {
 		protocols h1 h2
 	}
-}
-
-{$DOMAIN} {
-	root * /srv/www
-	file_server
-	encode gzip
-
-	header {
-		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-		Referrer-Policy no-referrer
-		X-Content-Type-Options nosniff
-	}
-}
-
-# Redirect www to the bare apex
-www.{$DOMAIN} {
-	redir https://{$DOMAIN}{uri} permanent
+	acme_dns cloudflare {env.CLOUDFLARE_API_TOKEN}
 }
 
 christmas.{$DOMAIN} {
@@ -50,65 +37,42 @@ hass.{$DOMAIN} {
 	redir /.well-known/caldav /remote.php/dav 308
 }
 
-schniff.{$DOMAIN} {
-	encode gzip
-
-	reverse_proxy schniffer-bot:8069 {
-		transport http {
-			compression off
+# Schniffer's monitor dashboard (the /schniff dashboard command mints its links).
+# Home network and WireGuard only (192.168.10.0/24 is the UniFi VPN): the public
+# schniffmap is a static site on the schlift.com VM, so nothing from the
+# internet reaches the bot.
+monitor.{$DOMAIN} {
+	tls {
+		issuer acme {
+			dir https://acme-v02.api.letsencrypt.org/directory
+			dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+			resolvers 1.1.1.1 8.8.8.8
 		}
 	}
 
-	header {
-		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-		Referrer-Policy no-referrer
-		X-Content-Type-Options nosniff
-		X-Frame-Options SAMEORIGIN
-		X-XSS-Protection "1; mode=block"
-	}
-}
-
-ppp.{$DOMAIN} {
-	encode gzip
-
-	reverse_proxy ppp:8040 {
-		transport http {
-			compression off
+	@lan remote_ip 192.168.1.0/24 192.168.10.0/24 127.0.0.1 ::1
+	handle @lan {
+		reverse_proxy schniffer-bot:8069 {
+			transport http {
+				compression off
+			}
 		}
 	}
-
+	handle {
+		respond "Local network access only" 403
+	}
 	header {
-		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 		Referrer-Policy no-referrer
 		X-Content-Type-Options nosniff
-		X-Frame-Options SAMEORIGIN
-		X-XSS-Protection "1; mode=block"
+		X-Frame-Options DENY
+		X-Robots-Tag "noindex, nofollow, noarchive"
 	}
 }
-
 
 herdcore.{$DOMAIN} {
 	encode gzip
 
 	reverse_proxy host.docker.internal:8090 {
-		transport http {
-			compression off
-		}
-	}
-
-	header {
-		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-		Referrer-Policy no-referrer
-		X-Content-Type-Options nosniff
-		X-Frame-Options SAMEORIGIN
-		X-XSS-Protection "1; mode=block"
-	}
-}
-
-snek.{$DOMAIN} {
-	encode gzip
-
-	reverse_proxy host.docker.internal:8080 {
 		transport http {
 			compression off
 		}
@@ -153,28 +117,28 @@ house.{$DOMAIN} {
 	}
 }
 
-# The plant monitor (~/plants, its own repository and container), on home_default. The app has no login of its own
-# and its page can start a round, so Caddy asks for one: user "plants", the bcrypt hash in .env (PLANTS_WEB_HASH),
-# the password in ~/plants/secrets/web_password. Home Assistant's dashboard may frame it.
-plants.{$DOMAIN} {
-	encode gzip
+# Router management is home network and WireGuard only. DNS-01 needs no public router address or login.
+router.{$DOMAIN} {
+    tls {
+        issuer acme {
+            dir https://acme-v02.api.letsencrypt.org/directory
+            dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+            resolvers 1.1.1.1 8.8.8.8
+        }
+    }
 
-	basic_auth {
-		plants {$PLANTS_WEB_HASH}
-	}
-
-	reverse_proxy plants:8097 {
-		transport http {
-			compression off
-		}
-		header_down -Server
-	}
-
-	header {
-		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-		Referrer-Policy no-referrer
-		X-Content-Type-Options nosniff
-		Content-Security-Policy "frame-ancestors 'self' https://hass.{$DOMAIN}"
-		X-Robots-Tag "noindex, nofollow, noarchive"
-	}
+    @lan remote_ip 192.168.1.0/24 192.168.10.0/24 127.0.0.1 ::1
+    handle @lan {
+        reverse_proxy https://192.168.1.1 {
+            header_up Host {http.request.host}
+            transport http {
+                # UniFi's upstream certificate is self-signed; the browser sees Let's Encrypt.
+                tls_insecure_skip_verify
+            }
+        }
+    }
+    handle {
+        respond "Local network access only" 403
+    }
+    header X-Robots-Tag "noindex, nofollow, noarchive"
 }

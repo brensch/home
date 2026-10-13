@@ -29,13 +29,8 @@ recorder:
 tts:
 
 # HTTP / Reverse Proxy Settings
-http:
-  use_x_forwarded_for: true
-  trusted_proxies:
-    - 172.18.0.0/16  # docker home_default network
-    - 127.0.0.1
-  ip_ban_enabled: true
-  login_attempts_threshold: 5
+# http: was migrated into .storage/http (2026-10-05) and is managed under Settings > System > Network now:
+# X-Forwarded-For on, trusted proxies 172.18.0.0/16 (home_default, i.e. Caddy) and 127.0.0.1, IP bans after 20 tries.
 
 google_assistant:
   project_id: passenger-princess-protector
@@ -56,6 +51,7 @@ google_assistant:
     - light
     - camera
 homeassistant:
+  unit_system: metric
   external_url: https://hass.brensch.com
   internal_url: http://192.168.1.8:8123
 
@@ -105,7 +101,9 @@ lovelace:
   # Frontend modules, in YAML so they live in git. Bump ?v= after changing a file, or browsers keep the old one.
   resource_mode: yaml
   resources:
-    - url: /local/plants-strategy.js?v=2
+    - url: /local/temperature-badge.js?v=2
+      type: module
+    - url: /local/plants-strategy.js?v=23
       type: module
   dashboards:
     plants-dash:
@@ -120,13 +118,26 @@ lovelace:
       icon: mdi:home
       show_in_sidebar: true
       filename: dashboards/home.yaml
-    system-dash:
+    health-dash:
       mode: yaml
-      title: System
-      icon: mdi:cog
+      title: Health
+      icon: mdi:heart-pulse
       show_in_sidebar: true
       require_admin: true
-      filename: dashboards/system.yaml
+      filename: dashboards/health.yaml
+    network-dash:
+      mode: yaml
+      title: Network
+      icon: mdi:router-wireless
+      show_in_sidebar: true
+      require_admin: true
+      filename: dashboards/network.yaml
+    camera-dash:
+      mode: yaml
+      title: Camera
+      icon: mdi:cctv
+      show_in_sidebar: true
+      filename: dashboards/camera.yaml
 
 # On while movie mode has the living room dimmed; its pre-film look is saved on
 # the devices by light_memory (survives restarts, unlike scene.create).
@@ -134,3 +145,111 @@ input_boolean:
   movie_dimmed:
     name: Movie mode has the living room dimmed
     icon: mdi:movie-open
+
+# Internet reachability is separate from the router's controller connection.
+binary_sensor:
+  - platform: rest
+    name: Internet connection
+    unique_id: unifi_primary_wan_internet_connection
+    device_class: connectivity
+    resource: https://192.168.1.1/proxy/network/api/s/default/stat/health
+    verify_ssl: false
+    scan_interval: 30
+    timeout: 10
+    headers:
+      X-API-KEY: !secret unifi_network_api_key
+    value_template: >-
+      {% set health = value_json.get('data', []) %}
+      {% set wan = health | selectattr('subsystem', 'equalto', 'wan') | list %}
+      {% set internet = health | selectattr('subsystem', 'equalto', 'www') | list %}
+      {{ value_json.get('meta', {}).get('rc') == 'ok'
+         and wan | length > 0 and internet | length > 0
+         and wan[0].get('status') == 'ok'
+         and internet[0].get('status') == 'ok' }}
+
+# Frigate (the NVR) reaches Home Assistant over MQTT, read by Home Assistant's own MQTT integration: no Frigate plugin.
+mqtt: !include mqtt.yaml
+
+# The face Frigate saw in a person's last visit, for the balcony person alert. Frigate cuts out every face it reads
+# and keeps it (clips/faces/train, the Face Library's Train tab), announcing each read on MQTT without the file, so
+# this asks its API (port 5000, inside the docker network only, no login) which of that visit's crops scored best.
+# Frigate only reads faces once the Face Library holds at least one face.
+rest_command:
+  frigate_faces:
+    url: http://frigate:5000/api/faces
+
+template:
+  - triggers:
+      - trigger: mqtt
+        topic: frigate/tracked_object_update
+    conditions:
+      - condition: template
+        value_template: "{{ trigger.payload_json.type == 'face' and trigger.payload_json.camera == 'balcony' }}"
+    actions:
+      - action: rest_command.frigate_faces
+        response_variable: faces
+      # Crops are named <event>-<time>-<name>-<score>.webp; the best of this visit's.
+      - variables:
+          file: >-
+            {% set ns = namespace(best='', score=-1) %}
+            {% for f in (faces.content.train if faces.content is mapping else []) | default([], true)
+                 if f.startswith(trigger.payload_json.id ~ '-') %}
+              {% set s = f[:-5].split('-')[-1] | float(0) %}
+              {% if s > ns.score %}{% set ns.best = f %}{% set ns.score = s %}{% endif %}
+            {% endfor %}{{ ns.best }}
+    sensor:
+      - name: Balcony last face
+        unique_id: frigate_balcony_last_face
+        icon: mdi:face-recognition
+        state: "{{ file if file else this.state }}"
+        attributes:
+          event: "{{ trigger.payload_json.id }}"
+          name: "{{ trigger.payload_json.name }}"
+          score: "{{ trigger.payload_json.score }}"
+  # Free space as a percentage, for the Health page and the disk alert (System Monitor reports usage % and free GiB).
+  - sensor:
+      - name: Server disk free percent
+        unique_id: server_disk_free_percent
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:harddisk
+        availability: "{{ has_value('sensor.server_disk_usage') }}"
+        state: "{{ (100 - states('sensor.server_disk_usage') | float) | round(1) }}"
+        attributes:
+          free: "{{ states('sensor.server_disk_free') }} GiB"
+      - name: NVR disk free percent
+        unique_id: server_nvr_disk_free_percent
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:cctv
+        availability: "{{ has_value('sensor.server_nvr_disk_usage') }}"
+        state: "{{ (100 - states('sensor.server_nvr_disk_usage') | float) | round(1) }}"
+        attributes:
+          free: "{{ states('sensor.server_nvr_disk_free') }} GiB"
+  - image:
+      # The last person's whole visit, as Frigate's animated preview: its popup plays it.
+      - name: Balcony last person clip
+        unique_id: frigate_balcony_last_person_clip
+        url: "http://frigate:5000/api/events/{{ state_attr('sensor.balcony_last_person', 'event') }}/preview.gif"
+        availability: "{{ state_attr('sensor.balcony_last_person', 'event') is string }}"
+      - name: Balcony last face
+        unique_id: frigate_balcony_last_face_image
+        url: "http://frigate:5000/clips/faces/train/{{ states('sensor.balcony_last_face') }}"
+
+# The off-box backup to Google Drive (the "backup" container, config/backup/backup.sh) writes its result here after
+# each daily run; the "Off-box backup" automation alerts when the last good run is over 2 days old.
+command_line:
+  - sensor:
+      name: Offsite backup
+      unique_id: offsite_backup
+      command: "cat /config/offsite-backup/status.json"
+      value_template: "{{ value_json.last_ok if value_json.last_ok else None }}"
+      device_class: timestamp
+      json_attributes: [last_run, failed, bytes]
+      scan_interval: 600
+
+# Camera live views go through Frigate's go2rtc (same version Home Assistant wants), not the one built into Home
+# Assistant: that one, inside this container, offered browsers an address they couldn't reach, so every cold view
+# waited for WebRTC to find another route. Frigate's publishes WebRTC at the server's LAN address.
+go2rtc:
+  url: http://frigate:1984/

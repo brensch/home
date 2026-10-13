@@ -205,7 +205,12 @@
   mode: single
 - id: fridge_watchdog
   alias: Fridge watchdog
-  description: Normal is ~1h of cooling then 0.5-1.5h off. Warn when it stops cycling, runs nonstop, or its plug is off or offline.
+  description: 'Normal (10 days of 5 s samples, 2026-09-28..10-08): 45-105 min of cooling, 40-100 min off.
+    A healthy cycle starts at ~103 W and settles to 88-91 W within 15 min (85-88 W by 30 min); only
+    a post-defrost cycle stays above 95 W longer, 25-43 min. With the door open (2026-10-07 19:48, 3 h)
+    it held 110 W flat, and on 2026-10-04 (11 h) 98 W flat, so sustained draw is the early signal:
+    the old 4 h nonstop trigger fired 3 h after the door opened and an hour after we had noticed.
+    Warn when it stops cycling, draws hard for too long, runs nonstop, or its plug is off or offline.'
   triggers:
   - trigger: numeric_state
     entity_id: sensor.fridge_power
@@ -213,6 +218,14 @@
     for: 03:00:00
     variables:
       problem: hasn't run its compressor in 3 hours. Is it warm inside?
+  - trigger: numeric_state
+    entity_id: sensor.fridge_power
+    above: 95
+    for: 01:15:00
+    variables:
+      problem: >-
+        has been pulling {{ states('sensor.fridge_power') | round(0) | int }} W for 75 minutes.
+        A healthy cycle drops under 95 W within 15 minutes. Door open?
   - trigger: numeric_state
     entity_id: sensor.fridge_power
     above: 20
@@ -421,3 +434,133 @@
           data:
             args: restore movie --fade 1
   mode: queued
+- id: balcony_person_alert
+  alias: Person on the balcony
+  description: >-
+    Push to the phone when Frigate sees a person on the balcony, with its snapshot; tapping it opens the Camera page.
+    If Frigate then reads their face during the visit, the same notification is replaced with the face and, once
+    the Face Library knows them, their name. At most one alert every 10 minutes (mode single, and the wait at the
+    end keeps it busy), so one visit is one alert.
+  triggers:
+  - trigger: state
+    entity_id: binary_sensor.balcony_person
+    to: 'on'  # from off, or from unknown after a restart
+  actions:
+  # Frigate usually publishes the person's snapshot just before the person count (0.3 s on 2026-10-11); if this
+  # visit's hasn't come yet, wait up to 5 s for it (or send without).
+  - if: "{{ now() - states.image.balcony_last_person_snapshot.last_changed > timedelta(seconds=10) }}"
+    then:
+    - wait_for_trigger:
+      - trigger: state
+        entity_id: image.balcony_last_person_snapshot
+      timeout: 00:00:05
+  - variables:
+      at: "{{ now().strftime('%-I:%M %p') }}"
+  - action: notify.mobile_app_schlixel
+    data:
+      title: Person on the balcony
+      message: Someone at {{ at }}
+      data:
+        image: /api/image_proxy/image.balcony_last_person_snapshot?t={{ now().timestamp() | int }}
+        url: /camera-dash/camera
+        clickAction: /camera-dash/camera
+        tag: balcony_person
+  # A face, if one shows while they're there (sensor.balcony_last_face changes with each face Frigate reads).
+  - wait_for_trigger:
+    - trigger: state
+      entity_id: sensor.balcony_last_face
+    timeout: 00:02:00
+  - if: "{{ wait.trigger is not none }}"
+    then:
+    - delay: 00:00:02  # let image.balcony_last_face fetch the new crop
+    - variables:
+        who: "{{ state_attr('sensor.balcony_last_face', 'name') | default('unknown', true) }}"
+    - action: notify.mobile_app_schlixel
+      data:
+        title: Person on the balcony
+        message: "{{ who | title if who != 'unknown' else 'Someone (face not known yet)' }} at {{ at }}"
+        data:
+          image: /api/image_proxy/image.balcony_last_face?t={{ now().timestamp() | int }}
+          url: /camera-dash/camera
+          clickAction: /camera-dash/camera
+          tag: balcony_person
+  - delay: 00:10:00
+  mode: single
+  max_exceeded: silent
+- id: server_disk_space
+  alias: Server disk space
+  description: >-
+    Warn when the server's root disk (133 GB) drops under 15% free (~20 GB) and again under 5% (~7 GB), and when the
+    NVR volume (100 GB, /srv/nvr) drops under 5% free: Frigate deletes old footage itself well before that, so it
+    would mean its cleanup has stopped. Repeats every morning while still low. Free space as a percentage comes
+    from template sensors in configuration.yaml.
+  triggers:
+  - trigger: numeric_state
+    entity_id: sensor.server_disk_free_percent
+    below: 15
+    for: 00:05:00
+  - trigger: numeric_state
+    entity_id: sensor.server_disk_free_percent
+    below: 5
+    for: 00:05:00
+  - trigger: numeric_state
+    entity_id: sensor.nvr_disk_free_percent
+    below: 5
+    for: 00:15:00
+  - trigger: time
+    at: 09:00:00
+  conditions:
+  - condition: template
+    value_template: >-
+      {{ states('sensor.server_disk_free_percent') | float(100) < 15 or states('sensor.nvr_disk_free_percent') | float(100) < 5 }}
+  actions:
+  - variables:
+      message: >-
+        {% set free = states('sensor.server_disk_free_percent') | float(100) %}{% set nvr = states('sensor.nvr_disk_free_percent') | float(100) %}
+        {% if free < 15 %}Server disk {{ free }}% free ({{ states('sensor.server_disk_free') }} GiB).{% if free < 5 %} Critical: services start failing when it fills.{% endif %}{% endif %}
+        {% if nvr < 5 %} NVR volume only {{ nvr }}% free: Frigate should keep it above this; check that it's still cleaning up.{% endif %}
+  - action: notify.send_message
+    target:
+      entity_id: notify.schlixel
+    data:
+      title: Server disk space
+      message: "{{ message | trim }}"
+  - action: persistent_notification.create
+    data:
+      notification_id: server_disk_space
+      title: Server disk space
+      message: "{{ message | trim }}"
+  mode: single
+- id: offsite_backup_stale
+  alias: Off-box backup
+  description: >-
+    Warn when the daily backup to Google Drive (the "backup" container) hasn't succeeded for over 2 days, checked
+    every morning after it should have run: a run that failed lists what failed; no status at all means the
+    container isn't running.
+  triggers:
+  - trigger: time
+    at: 07:30:00
+  conditions:
+  - condition: template
+    value_template: >-
+      {{ states('sensor.offsite_backup') in ['unknown', 'unavailable']
+         or now() - as_datetime(states('sensor.offsite_backup')) > timedelta(days=2) }}
+  actions:
+  - variables:
+      message: >-
+        {% set f = state_attr('sensor.offsite_backup', 'failed') %}Google Drive backup hasn't succeeded since
+        {{ states('sensor.offsite_backup') | as_datetime | as_local | default('ever', true) }}{{ '; failing: ' ~ f if f else '' }}.
+        Check the backup container's log.
+  - action: notify.send_message
+    target:
+      entity_id: notify.schlixel
+    data:
+      title: Backup
+      message: "{{ message }}"
+  - action: persistent_notification.create
+    data:
+      notification_id: offsite_backup
+      title: Backup
+      message: "{{ message }}"
+  mode: single
+

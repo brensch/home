@@ -1,0 +1,95 @@
+views:
+- title: Health
+  path: health
+  icon: mdi:heart-pulse
+  type: sections
+  max_columns: 1
+  sections:
+  - type: grid
+    cards:
+    - type: heading
+      heading: Needs attention
+      icon: mdi:alert-circle-outline
+    - type: entity-filter
+      card:
+        type: entities
+        title: Offline right now
+        show_header_toggle: false
+      show_empty: true
+      conditions:
+      - condition: state
+        state: unavailable
+      entities:
+      - light.tv_left
+      - light.tv_right
+      - light.hektar
+      - light.shelf
+      - light.lines_desk
+      - light.lines_kitchen
+      - light.tree
+      - light.garland
+      - light.kitchen_1
+      - light.kitchen_2
+      - light.kitchen_3
+      - light.kitchen_4
+      - light.fan_front
+      - light.brightboy1
+      - light.brendside
+      - light.gril_bedside
+      - light.fado
+      - light.fily
+      - light.uplight
+      - light.balcony
+      - light.closet
+      - media_player.tv
+      - switch.fridge_relay
+      - switch.desk_relay
+      - sensor.media_power
+      - switch.piano_relay
+    - type: heading
+      heading: Batteries
+      heading_style: subtitle
+      icon: mdi:battery
+    - type: tile
+      entity: sensor.front_door_switch_battery
+      name: Front door switch
+    - type: tile
+      entity: sensor.kitchen_switch_battery
+      name: Kitchen switch
+    - type: tile
+      entity: sensor.bedroom_switch_battery
+      name: Bedroom switch
+    - type: tile
+      entity: sensor.hue_outdoor_motion_sensor_1_battery
+      name: Outdoor sensor
+    - type: tile
+      entity: sensor.closet_battery
+      name: Closet sensor
+    - type: heading
+      heading: Server
+      heading_style: subtitle
+      icon: mdi:server
+    - type: tile
+      entity: sensor.backup_last_successful_automatic_backup
+      name: Last backup
+    - type: tile
+      entity: sensor.backup_next_scheduled_automatic_backup
+      name: Next backup
+    - type: tile
+      entity: sensor.offsite_backup
+      name: Google Drive backup
+      icon: mdi:google-drive
+    - type: tile
+      entity: input_datetime.server_heartbeat
+      name: Heartbeat
+    - type: tile
+      entity: sensor.server_disk_free_percent
+      name: Disk free
+      state_content: [state, free]
+    - type: tile
+      entity: binary_sensor.balcony_camera
+      name: Balcony camera
+    - type: tile
+      entity: sensor.nvr_disk_free_percent
+      name: NVR disk free
+      state_content: [state, free]

@@ -1,0 +1,123 @@
+views:
+- title: Network
+  path: network
+  icon: mdi:router-wireless
+  type: sections
+  max_columns: 3
+  sections:
+  - type: grid
+    cards:
+    - type: heading
+      heading: Network
+      icon: mdi:router-wireless
+    - type: tile
+      entity: binary_sensor.internet_connection
+      name: Internet
+      icon: mdi:web
+    - type: tile
+      entity: sensor.lo_fi_clients
+      name: Devices on lo-fi
+      icon: mdi:wifi
+    - type: tile
+      entity: sensor.schrouter_cloudflare_wan_latency
+      name: Internet latency
+      icon: mdi:timer-outline
+    - type: tile
+      entity: sensor.schrouter_uptime
+      name: Router started
+      icon: mdi:clock-start
+    - type: tile
+      entity: sensor.schrouter_cpu_temperature
+      name: Router temperature
+      icon: mdi:thermometer
+    - type: tile
+      entity: update.schrouter_firmware
+      name: Router firmware
+  - type: grid
+    cards:
+    - type: heading
+      heading: Activity
+      icon: mdi:chart-line
+    - type: history-graph
+      title: Internet traffic · Mbit/s
+      hours_to_show: 6
+      entities:
+      - entity: sensor.schrouter_port_4_rx
+        name: Download
+      - entity: sensor.schrouter_port_4_tx
+        name: Upload
+    - type: history-graph
+      title: Router load · %
+      hours_to_show: 6
+      entities:
+      - entity: sensor.schrouter_cpu_utilization
+        name: CPU
+      - entity: sensor.schrouter_memory_utilization
+        name: Memory
+  - type: grid
+    cards:
+    - type: heading
+      heading: Connections
+      icon: mdi:lan
+    - type: entity-filter
+      entities:
+      - entity: device_tracker.bose_portable_home_speaker
+        name: Bose-Portable-Home-Speaker
+      - entity: device_tracker.bose_smart_soundbar_300
+        name: Bose-Smart-Soundbar-300
+      - entity: device_tracker.brends_mac_mini
+        name: brends-Mac-mini
+      - entity: device_tracker.desk
+        name: desk
+      - entity: device_tracker.nanoleaf
+        name: Desk Lines
+      - entity: device_tracker.fridge
+        name: fridge
+      - entity: device_tracker.google_nest_hub
+        name: Google-Nest-Hub
+      - entity: device_tracker.lifx_par38_815cc8
+        name: Kitchen LIFX
+      - entity: device_tracker.nanoleaf_lines
+        name: Kitchen Lines
+      - entity: device_tracker.mac
+        name: Mac
+      - entity: device_tracker.media
+        name: media
+      - entity: device_tracker.piano
+        name: piano
+      - entity: device_tracker.pixel_9_pro
+        name: Pixel-9-Pro
+      - entity: device_tracker.roborock_vacuum_a104
+        name: roborock-vacuum-a104
+      - entity: device_tracker.schbox
+        name: Schbox
+      - entity: device_tracker.tidbyt
+        name: Tidbyt
+      - entity: device_tracker.sony
+        name: TV
+      - entity: device_tracker.wled_wled
+        name: wled-WLED
+      conditions:
+      - condition: state
+        state: home
+      show_empty: false
+      card:
+        type: entities
+        title: On lo-fi
+        show_header_toggle: false
+    - type: entity-filter
+      entities:
+      - entity: device_tracker.snek3
+        name: Home server
+      - entity: device_tracker.square
+        name: Hue bridge
+      - entity: device_tracker.unifi_default_72_2d_b8_22_bb_d0
+        name: Wired device · 72:2D:B8:22:BB:D0
+      conditions:
+      - condition: state
+        state: home
+      show_empty: false
+      card:
+        type: entities
+        title: Wired clients
+        show_header_toggle: false

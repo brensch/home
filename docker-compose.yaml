@@ -10,11 +10,24 @@ services:
     # Running as host user for easier file permission management
     user: "${UID}:${GID}"
     # privileged removed; add back if you need USB / network discovery that fails without it
+    # Zigbee coordinator for ZHA (SONOFF Dongle-PMG24, EFR32MG24, EZSP). Mapped by id so it can't swap with another
+    # serial device; the host resolves the symlink when the container is created, so after replugging the dongle
+    # recreate the container (docker compose up -d --force-recreate homeassistant). dialout owns /dev/ttyUSB*.
+    # 2.4 GHz plan (2026-10-11): Wi-Fi pinned to ch 6 (2427-2447 MHz) on the UDM, Hue on Zigbee 11 (2405),
+    # ZHA on Zigbee 25 (2475). Don't put the Wi-Fi back on auto: 1 would sit on Hue, 11 next to ZHA.
+    devices:
+      - /dev/serial/by-id/usb-Zigbee_Dongle_Dongle-PMG24_f633ebea3b5ef011af8353401045c30f-if00-port0:/dev/zigbee
+    group_add:
+      - dialout
     environment:
       - TZ=America/Los_Angeles  # PST
     volumes:
       - ./data/homeassistant:/config  # entire HA config; manage via UI
       - /etc/localtime:/etc/localtime:ro
+      # Read-only, only so System Monitor can report the NVR volume's free space (/config shows the root disk's).
+      - /srv/nvr:/mnt/nvr:ro
+      # The plants time-lapses (~/plants writes them hourly), read-only: Media > My media > plants.
+      - /home/brensch/plants/data/films:/media/plants:ro
     restart: unless-stopped
     # HA needs more than Docker's default 10 s to shut down (the recorder's
     # final commit); being killed mid-shutdown left the database "not shut down
@@ -22,10 +35,17 @@ services:
     stop_grace_period: 2m
     networks:
       - home_default
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
   # Caddy (reverse proxy) is optional and starts after HA
 
   # MQTT, for the plants service (~/plants) to announce each plant as a device to Home Assistant. Logins only
   # (config/mosquitto/passwd: homeassistant, plants), an ACL, and no published port: home_default only.
+  # After editing passwd/acl, reload with `docker exec mosquitto kill -HUP 1`, NOT `docker kill -s HUP mosquitto`:
+  # any `docker kill` marks the container manually stopped, and Docker then skips it at the next boot (2026-10-09).
   mosquitto:
     image: eclipse-mosquitto:2@sha256:38c0da4f2ef84284d47b3b3eeea1cb3bdeabe81ee10caf0cd5c5ff61ee3ea408
     container_name: mosquitto
@@ -46,7 +66,8 @@ services:
 
   caddy:
     # Pinned by digest (the 2026-09-17 rebuild); re-pull on purpose, not by accident.
-    image: caddy:2.11.4-alpine@sha256:6aeddd44c3078b0f9a35206472a11420648a79c184603ef95957d0a20044cb2b
+    build: ./config/caddy
+    image: homelab-caddy:2.11.4-cloudflare-0.2.4
     container_name: caddy
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -56,14 +77,12 @@ services:
     environment:
       - ACME_AGREE=true
       - DOMAIN=${DOMAIN}
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
       - ESPHOME_USERNAME=${ESPHOME_USERNAME}
       - ESPHOME_PASSWORD=${ESPHOME_PASSWORD}
-      - PLANTS_WEB_HASH=${PLANTS_WEB_HASH}
     volumes:
       - ./config/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./data/christmas-party:/srv/christmas-party
-      # Built Hugo blog (brensch.com root) from the separate `blog` repo.
-      - /home/brensch/blog/public:/srv/www:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
@@ -91,7 +110,9 @@ services:
   # DOMAINS covers the wildcard as well as the apex. hass.brensch.com resolves
   # via *.brensch.com, and the old SUBDOMAIN=@ config only ever touched the
   # apex — so even with working auth, remote access would have broken on the
-  # next IP change.
+  # next IP change. dns.brensch.com is the WireGuard endpoint phones dial
+  # (the UniFi router's VPN server, UDP 51820). The apex is not here any more:
+  # brensch.com (the blog), www, ppp and snek live on the schlift.com VM.
   cloudflare-ddns:
     image: favonia/cloudflare-ddns:latest
     container_name: cloudflare-ddns
@@ -107,7 +128,7 @@ services:
       - no-new-privileges:true
     environment:
       - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
-      - "DOMAINS=${DOMAIN},*.${DOMAIN}"
+      - "DOMAINS=*.${DOMAIN},dns.${DOMAIN}"
       - IP4_PROVIDER=cloudflare.trace
       - IP6_PROVIDER=none
       - PROXIED=false
@@ -142,6 +163,91 @@ services:
     networks:
       - home_default
     user: "${UID}:${GID}"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # NVR for the UniFi camera(s), replacing Protect's own storage. Config in data/frigate/config/config.yml.
+  # Recordings live on /srv/nvr, a separate 100 GB LVM volume (ubuntu-vg/nvr), never the root disk: the bind below
+  # names a folder that only exists on that volume, so if it isn't mounted the container refuses to start rather
+  # than recording onto /. (The bare /srv/nvr mountpoint is also chattr +i.)
+  frigate:
+    image: ghcr.io/blakeblackshear/frigate:0.18.0@sha256:9678a83a76e4730ac7d9ea7428370e32ae656d6b312aaad30d6c69f3fef14d35
+    container_name: frigate
+    restart: unless-stopped
+    shm_size: 400mb   # 4K detect frames: Frigate asks for 356 MB+
+    mem_limit: 4g
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128   # Iris Xe: OpenVINO person detection and the face model
+    environment:
+      - TZ=America/Los_Angeles
+      - FRIGATE_RTSP_HIGH=${FRIGATE_RTSP_HIGH}
+      - FRIGATE_RTSP_MEDIUM=${FRIGATE_RTSP_MEDIUM}
+      - FRIGATE_MQTT_PASSWORD=${FRIGATE_MQTT_PASSWORD}
+    volumes:
+      - ./data/frigate/config:/config
+      - type: bind
+        source: /srv/nvr/frigate
+        target: /media/frigate
+        bind:
+          create_host_path: false
+      - type: tmpfs   # recording segments are staged here before being moved to /media/frigate
+        target: /tmp/cache
+        tmpfs:
+          size: 1000000000
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "8971:8971"   # web UI, with login (LAN only: nothing forwards it from the internet)
+      # go2rtc's WebRTC, for Frigate's and Home Assistant's live views (LAN only). Its API (1984) stays on
+      # home_default, where Home Assistant drives it.
+      - "8555:8555/tcp"
+      - "8555:8555/udp"
+    networks:
+      - home_default
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Off-box backup to Google Drive (snek3-backup/): Home Assistant's daily backups, the plants (~/plants/data:
+  # photos, AI logs, database; not the films, which rebuild from the photos) and Frigate's faces and config, daily at 06:30 and at start. See config/backup/backup.sh.
+  # rclone's Google login (scope drive.file: only files it made) is in ~/.config/rclone, outside git; rclone
+  # refreshes the token there itself. Status for Home Assistant: data/homeassistant/offsite-backup/status.json.
+  backup:
+    build: ./config/backup
+    image: homelab-backup:rclone-1.71
+    container_name: backup
+    restart: unless-stopped
+    user: "${UID}:${GID}"
+    entrypoint: ["/bin/sh", "/backup.sh"]
+    environment:
+      - TZ=America/Los_Angeles
+      - BACKUP_AT=06:30
+      - KEEP_DAYS=90
+    volumes:
+      - ./config/backup/backup.sh:/backup.sh:ro
+      - /home/brensch/.config/rclone:/config/rclone
+      - ./data/homeassistant/offsite-backup:/status
+      - ./data/homeassistant/backups:/src/homeassistant-backups:ro
+      # Read-write only because SQLite needs its -shm file to read a live WAL database; the script only reads.
+      - /home/brensch/plants/data:/src/plants
+      - ./data/frigate/config:/src/frigate-config:ro
+      - type: bind
+        source: /srv/nvr/frigate/clips/faces
+        target: /src/frigate-faces
+        read_only: true
+        bind:
+          create_host_path: false
+    networks:
+      - home_default
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   palworld:
     image: thijsvanloef/palworld-server-docker:latest
@@ -173,6 +279,11 @@ services:
       - ./data/palworld:/palworld
     networks:
       - home_default
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   caddy_data: {}

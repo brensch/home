@@ -34,3 +34,11 @@ tests/shots/
 
 # Broker password hashes (users: homeassistant, plants)
 config/mosquitto/passwd
+
+# Real secrets never go in this public repository; secrets.example.yaml lists the keys.
+data/homeassistant/secrets.yaml
+
+# Frigate writes its own runtime YAML next to config.yml; only config.yml is ours.
+data/frigate/config/**/*.yaml
+data/frigate/config/**/*.yml
+!data/frigate/config/config.yml

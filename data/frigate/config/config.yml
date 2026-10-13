@@ -1,0 +1,143 @@
+# Frigate NVR (docker-compose.yaml: frigate). Recordings go to /srv/nvr/frigate, a dedicated 100 GB volume, so a
+# full NVR can never fill the root disk; Frigate also deletes the oldest footage itself when that volume runs low.
+# Detections go to Home Assistant over MQTT (its built-in MQTT integration; no Frigate plugin): mosquitto user
+# "frigate", password in .env, may only publish under frigate/.
+mqtt:
+  enabled: true
+  host: mosquitto
+  user: frigate
+  password: "{FRIGATE_MQTT_PASSWORD}"
+
+detectors:
+  ov:
+    type: openvino
+    device: GPU   # the i5-1340P's Iris Xe
+
+model:
+  width: 300
+  height: 300
+  input_tensor: nhwc
+  input_pixel_format: bgr
+  path: /openvino-model/ssdlite_mobilenet_v2.xml
+  labelmap_path: /openvino-model/coco_91cl_bkgr.txt
+
+ffmpeg:
+  # One stream, the camera's 4K H.265 (15 fps, set in Protect): recording copies it to disk as it comes, and only
+  # detection decodes it. Decoded on the CPU: measured 2026-10-11, 4K decode is 66% of a core on the CPU and 55% on
+  # the iGPU, but iGPU (VAAPI) decode shared with detection and the face model kept failing ("Failed to sync
+  # surface", ffmpeg crashing every minute or two, 144 times in 3 hours, each a few seconds of nothing detected).
+  hwaccel_args: ""
+  output_args:
+    record: preset-record-ubiquiti
+
+# Protect's RTSPS streams need rtspx:// (no SRTP) with go2rtc. The aliases are in .env. (The camera also always
+# encodes a 640x360 channel, which Protect won't switch off and nothing uses.)
+#
+# Home Assistant's camera views use this go2rtc too (its configuration.yaml: go2rtc: url), adding the Protect streams
+# it needs itself; this go2rtc is the version Home Assistant 2026.9 wants (1.9.14). Browsers reach WebRTC here at
+# the server's LAN address (port 8555, published), not the container's address they can't reach.
+go2rtc:
+  streams:
+    balcony:
+      - rtspx://192.168.1.1:7441/{FRIGATE_RTSP_HIGH}
+    # The 720p channel, only for Home Assistant's live thumbnails (camera.balcony); Frigate itself doesn't read it.
+    balcony_sub:
+      - rtspx://192.168.1.1:7441/{FRIGATE_RTSP_MEDIUM}
+  webrtc:
+    candidates:
+      - 192.168.1.8:8555
+      - stun:8555
+  # Keep the 720p connected all the time, so Home Assistant's live thumbnail starts at once. (Home Assistant's own
+  # "preload stream" option on camera.balcony only registers with go2rtc when Home Assistant starts, so every
+  # Frigate restart silently dropped it.)
+  preload:
+    balcony_sub: video
+
+cameras:
+  balcony:
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/balcony
+          input_args: preset-rtsp-restream
+          roles: [record, detect]
+    # Detection on the 4K stream scaled to 1080p, 3 fps. Measured 2026-10-11: at full 4K the detect process idled
+    # at ~1% of a core but spiked to 330% while someone moved in view (cutting and resizing regions from 8 MP
+    # frames); 1080p is a quarter of that work. Faces stay ~2.3x the size they were at 720p (Frigate's face finder
+    # works at <=1080 anyway, so face results are the same as at 4K); at 720p a face across the room fell under
+    # face recognition's 750 px minimum. Recording is still the untouched 4K.
+    # The person snapshot sent over MQTT (Home Assistant's image.balcony_last_person_snapshot, and the phone
+    # alert): cropped to the person from the 4K detect frame, 1080 px tall, with Frigate's box around them and no
+    # timestamp. (Defaults: 270 px, quality 70, box and timestamp.)
+    mqtt:
+      crop: true
+      height: 1080
+      quality: 90
+      bounding_box: true
+      timestamp: false
+    detect:
+      enabled: true   # off unless set, in 0.18
+      width: 1920
+      height: 1080
+      fps: 3
+    motion:
+      # Less sensitive than the defaults (threshold 30, contour_area 10): the plants' leaves and the light move all
+      # day, which counted as motion in nearly every segment (~3 GB/h with nobody there). A person is much bigger.
+      threshold: 45
+      contour_area: 40
+
+# What's tracked, for every camera (it is global): people, and every animal the model knows (it has no squirrels or
+# rats; the zoo animals are only there because it's all of them). A person is an alert; an animal is a detection.
+# Same detector pass either way, so the animals cost nothing extra.
+objects:
+  track: [person, bird, cat, dog, horse, sheep, cow, elephant, bear, zebra, giraffe]
+
+review:
+  alerts:
+    labels: [person]
+  detections:
+    labels: [bird, cat, dog, horse, sheep, cow, elephant, bear, zebra, giraffe]
+
+# Each bird gets its species as a sub label ("Rock Pigeon"), from a local model, only run when a bird is tracked.
+classification:
+  bird:
+    enabled: true
+
+# Only footage around a person (alert, 14 days) or an animal (detection, 7 days) is kept; plain motion (leaves,
+# light, the camera's own night switch) and continuous footage aren't kept at all (2026-10-11: motion was kept 2 days
+# before). "mode: motion" keeps just the parts of those events where something moved.
+record:
+  enabled: true
+  continuous:
+    days: 0
+  motion:
+    days: 0
+  alerts:
+    retain:
+      days: 14
+      mode: motion
+  detections:
+    retain:
+      days: 7
+      mode: motion
+
+# Birdseye (one view combining all cameras) is pointless with one camera; off, so it doesn't keep an encoder around.
+birdseye:
+  enabled: false
+
+snapshots:
+  enabled: true
+  retain:
+    default: 14
+version: 0.18-0
+
+# Faces of people Frigate has detected, matched against the Face Library (train it in Frigate's UI: Face Library).
+# The large ArcFace model, which runs on the iGPU through OpenVINO; it only runs while a person is in view.
+face_recognition:
+  enabled: true
+  model_size: large
+
+# TEMPORARY (2026-10-11): why faces aren't being read. Remove once face recognition is confirmed working.
+logger:
+  default: info
+  logs:
+    frigate.data_processing.real_time.face: debug

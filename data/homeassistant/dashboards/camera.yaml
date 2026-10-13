@@ -1,0 +1,64 @@
+# The balcony camera (UniFi G6 Turret), all through Frigate: live views are Generic Cameras on Frigate's go2rtc
+# (camera.balcony 720p, camera.balcony_4k), people and faces come over MQTT (mqtt.yaml).
+views:
+- title: Camera
+  path: camera
+  icon: mdi:cctv
+  type: sections
+  max_columns: 2
+  sections:
+  - type: grid
+    column_span: 2
+    cards:
+    - type: heading
+      heading: Balcony
+      icon: mdi:cctv
+      badges:
+      - {type: entity, entity: binary_sensor.balcony_person, show_state: true, show_icon: true}
+      # Frigate's own UI (recordings, review, Face Library); LAN only, so it won't open from outside the house.
+      - type: entity
+        entity: binary_sensor.balcony_camera
+        name: Frigate
+        icon: mdi:open-in-new
+        show_name: true
+        show_state: false
+        show_icon: true
+        tap_action: {action: url, url_path: "https://192.168.1.8:8971"}
+    # The 720p stream plays everywhere; tap for the 4K one.
+    - type: picture-entity
+      entity: camera.balcony
+      camera_view: live
+      show_name: false
+      show_state: false
+      tap_action: {action: more-info, entity: camera.balcony_4k}
+      grid_options: {columns: full}
+  - type: grid
+    cards:
+    - type: heading
+      heading: People
+      heading_style: subtitle
+      icon: mdi:account-eye
+    - {type: tile, entity: binary_sensor.balcony_person, name: Someone there}
+    # The last person: their snapshot; tap it (or the tile) for the whole visit, playing in the popup.
+    - type: tile
+      entity: sensor.balcony_last_person
+      name: Last person
+      tap_action: {action: more-info, entity: image.balcony_last_person_clip}
+    - type: picture-entity
+      entity: image.balcony_last_person_snapshot
+      show_name: false
+      show_state: false
+      tap_action: {action: more-info, entity: image.balcony_last_person_clip}
+      grid_options: {columns: full}
+  - type: grid
+    cards:
+    - type: heading
+      heading: Today
+      heading_style: subtitle
+      icon: mdi:history
+    - type: history-graph
+      hours_to_show: 24
+      entities:
+      - {entity: binary_sensor.balcony_person, name: Person}
+      - {entity: binary_sensor.balcony_motion, name: Motion}
+      grid_options: {columns: full}
