@@ -111,8 +111,11 @@ services:
   # via *.brensch.com, and the old SUBDOMAIN=@ config only ever touched the
   # apex — so even with working auth, remote access would have broken on the
   # next IP change. dns.brensch.com is the WireGuard endpoint phones dial
-  # (the UniFi router's VPN server, UDP 51820). The apex is not here any more:
-  # brensch.com (the blog), www, ppp and snek live on the schlift.com VM.
+  # (the UniFi router's VPN server, UDP 51820), and since 2026-10-13 the only
+  # name it manages: there are no port forwards any more, so home services
+  # (hass, monitor, router, house, ...) have fixed A records to 192.168.1.8,
+  # reachable at home or over WireGuard, and brensch.com, www, ppp and snek
+  # live on the schlift.com VM.
   cloudflare-ddns:
     image: favonia/cloudflare-ddns:latest
     container_name: cloudflare-ddns
@@ -128,7 +131,7 @@ services:
       - no-new-privileges:true
     environment:
       - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
-      - "DOMAINS=*.${DOMAIN},dns.${DOMAIN}"
+      - "DOMAINS=dns.${DOMAIN}"
       - IP4_PROVIDER=cloudflare.trace
       - IP6_PROVIDER=none
       - PROXIED=false
