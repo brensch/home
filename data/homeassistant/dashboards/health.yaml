@@ -93,3 +93,12 @@ views:
       entity: sensor.nvr_disk_free_percent
       name: NVR disk free
       state_content: [state, free]
+    - type: tile
+      entity: sensor.server_cpu_usage
+      name: CPU
+    - type: tile
+      entity: sensor.server_cpu_temperature
+      name: CPU temperature
+    - type: tile
+      entity: sensor.server_memory_usage
+      name: Memory used

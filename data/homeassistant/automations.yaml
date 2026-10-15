@@ -534,6 +534,52 @@
       title: Server disk space
       message: "{{ message | trim }}"
   mode: single
+- id: server_health
+  alias: Server health
+  description: >-
+    Warn when the server itself is struggling: CPU over 90% for 15 minutes, memory over 90% used (not counting
+    cache) or CPU package over 90 °C for 10 minutes. The readings are System Monitor's (sensor.server_*), which see
+    the whole host from inside the container; this replaced schniffer's node-exporter (2026-10-14). Repeats every
+    morning while still true.
+  triggers:
+  - trigger: numeric_state
+    entity_id: sensor.server_cpu_usage
+    above: 90
+    for: 00:15:00
+  - trigger: numeric_state
+    entity_id: sensor.server_memory_usage
+    above: 90
+    for: 00:10:00
+  - trigger: numeric_state
+    entity_id: sensor.server_cpu_temperature
+    above: 90
+    for: 00:10:00
+  - trigger: time
+    at: 09:00:00
+  conditions:
+  - condition: template
+    value_template: >-
+      {{ states('sensor.server_cpu_usage') | float(0) > 90 or states('sensor.server_memory_usage') | float(0) > 90
+         or states('sensor.server_cpu_temperature') | float(0) > 90 }}
+  actions:
+  - variables:
+      message: >-
+        {% set cpu = states('sensor.server_cpu_usage') | float(0) %}{% set mem = states('sensor.server_memory_usage') | float(0) %}{% set t = states('sensor.server_cpu_temperature') | float(0) %}
+        {% if cpu > 90 %}CPU {{ cpu }}% (load {{ states('sensor.server_load_15m') }}). {% endif %}
+        {% if mem > 90 %}Memory {{ mem }}% used, swap {{ states('sensor.server_swap_usage') }}%. {% endif %}
+        {% if t > 90 %}CPU at {{ t }} °C. {% endif %}Check `docker stats` for the container responsible.
+  - action: notify.send_message
+    target:
+      entity_id: notify.schlixel
+    data:
+      title: Server health
+      message: "{{ message | trim }}"
+  - action: persistent_notification.create
+    data:
+      notification_id: server_health
+      title: Server health
+      message: "{{ message | trim }}"
+  mode: single
 - id: offsite_backup_stale
   alias: Off-box backup
   description: >-
