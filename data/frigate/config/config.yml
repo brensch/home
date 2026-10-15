@@ -13,13 +13,19 @@ detectors:
     type: openvino
     device: GPU   # the i5-1340P's Iris Xe
 
+# YOLOv9-s, 320x320 (built by config/frigate/yolov9.Dockerfile), since 2026-10-14. Frigate's bundled default,
+# SSDLite MobileNet v2 at 300x300, called the begonia's dark leaves against the fence slats, the broom and the
+# curtain "person" at 0.70-0.83 (12 of 82 person events in a week); YOLOv9-s scores those crops 0.02-0.24 and real
+# people about as high as before. 14.5 ms an inference on the Iris Xe (SSDLite: 6 ms), and it only runs where there
+# is motion.
 model:
-  width: 300
-  height: 300
-  input_tensor: nhwc
-  input_pixel_format: bgr
-  path: /openvino-model/ssdlite_mobilenet_v2.xml
-  labelmap_path: /openvino-model/coco_91cl_bkgr.txt
+  model_type: yolo-generic
+  width: 320
+  height: 320
+  input_tensor: nchw
+  input_dtype: float
+  path: /models/yolov9-s-320.onnx
+  labelmap_path: /labelmap/coco-80.txt
 
 ffmpeg:
   # One stream, the camera's 4K H.265 (15 fps, set in Protect): recording copies it to disk as it comes, and only

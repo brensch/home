@@ -191,6 +191,7 @@ services:
       - FRIGATE_MQTT_PASSWORD=${FRIGATE_MQTT_PASSWORD}
     volumes:
       - ./data/frigate/config:/config
+      - ./data/frigate/models:/models:ro   # the detection model (config/frigate/yolov9.Dockerfile builds it)
       - type: bind
         source: /srv/nvr/frigate
         target: /media/frigate
