@@ -24,7 +24,7 @@
   mode: single
 - id: arrival_flash
   alias: Arrival flash
-  description: Flash both Lines, the kitchen table light and Brightboy in the arriver's colour, then turn the living room on.
+  description: Flash both Lines, the kitchen table light, Brightboy, the two TV lights and (before 9pm) the bedroom in the arriver's colour, then turn the living room on.
   # not_from keeps an HA restart (unknown/unavailable -> home) from flashing.
   triggers:
   - trigger: state
@@ -44,13 +44,16 @@
     variables:
       color: [255, 110, 0]    # orange
   actions:
+  # The bedroom joins before 9pm only, so a late arrival doesn't light up
+  # someone already in bed. fan_front is the kitchen table light.
   - action: script.flash_lights
     data:
-      lights:
-      - light.lines_kitchen
-      - light.lines_desk
-      - light.fan_front    # kitchen table light
-      - light.brightboy1
+      lights: >
+        {{ ['light.lines_kitchen', 'light.lines_desk',
+            'light.fan_front',
+            'light.brightboy1',
+            'light.tv_left', 'light.tv_right']
+           + (['light.bedroom'] if now().hour < 21 else []) }}
       color: '{{ color }}'
       hold: 5
   # Always, not just after dark: the house is dark even in the day.
