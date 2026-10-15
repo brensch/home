@@ -440,7 +440,7 @@
 - id: balcony_person_alert
   alias: Person on the balcony
   description: >-
-    Push to the phone when Frigate sees a person on the balcony, with its snapshot; tapping it opens the Camera page.
+    Push to both phones (ours and Alyssa's) when Frigate sees a person on the balcony, with its snapshot; tapping it opens the Camera page.
     If Frigate then reads their face during the visit, the same notification is replaced with the face and, once
     the Face Library knows them, their name. At most one alert every 10 minutes (mode single, and the wait at the
     end keeps it busy), so one visit is one alert.
@@ -459,15 +459,19 @@
       timeout: 00:00:05
   - variables:
       at: "{{ now().strftime('%-I:%M %p') }}"
-  - action: notify.mobile_app_schlixel
-    data:
-      title: Person on the balcony
-      message: Someone at {{ at }}
-      data:
-        image: /api/image_proxy/image.balcony_last_person_snapshot?t={{ now().timestamp() | int }}
-        url: /camera-dash/camera
-        clickAction: /camera-dash/camera
-        tag: balcony_person
+      phones: [mobile_app_schlixel, mobile_app_alyssas_iphone_12_fall_2020]
+  - repeat:
+      for_each: "{{ phones }}"
+      sequence:
+      - action: notify.{{ repeat.item }}
+        data:
+          title: Person on the balcony
+          message: Someone at {{ at }}
+          data:
+            image: /api/image_proxy/image.balcony_last_person_snapshot?t={{ now().timestamp() | int }}
+            url: /camera-dash/camera  # iOS
+            clickAction: /camera-dash/camera  # Android
+            tag: balcony_person
   # A face, if one shows while they're there (sensor.balcony_last_face changes with each face Frigate reads).
   - wait_for_trigger:
     - trigger: state
@@ -478,15 +482,18 @@
     - delay: 00:00:02  # let image.balcony_last_face fetch the new crop
     - variables:
         who: "{{ state_attr('sensor.balcony_last_face', 'name') | default('unknown', true) }}"
-    - action: notify.mobile_app_schlixel
-      data:
-        title: Person on the balcony
-        message: "{{ who | title if who != 'unknown' else 'Someone (face not known yet)' }} at {{ at }}"
-        data:
-          image: /api/image_proxy/image.balcony_last_face?t={{ now().timestamp() | int }}
-          url: /camera-dash/camera
-          clickAction: /camera-dash/camera
-          tag: balcony_person
+    - repeat:
+        for_each: "{{ phones }}"
+        sequence:
+        - action: notify.{{ repeat.item }}
+          data:
+            title: Person on the balcony
+            message: "{{ who | title if who != 'unknown' else 'Someone (face not known yet)' }} at {{ at }}"
+            data:
+              image: /api/image_proxy/image.balcony_last_face?t={{ now().timestamp() | int }}
+              url: /camera-dash/camera
+              clickAction: /camera-dash/camera
+              tag: balcony_person
   - delay: 00:10:00
   mode: single
   max_exceeded: silent
