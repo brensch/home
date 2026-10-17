@@ -10,7 +10,7 @@ INTERVAL=${INTERVAL:-5}
 KEEP_HOURS=${KEEP_HOURS:-6}
 
 connect() {
-  until adb connect "$TV" 2>&1 | grep -q connected && adb -s "$TV" shell true 2>/dev/null; do sleep 30; done
+  until adb connect "$TV" 2>&1 | grep -q connected && adb -s "$TV" shell true 2>/dev/null; do sleep 5; done
 }
 
 # epoch-stamped lines on stdin -> the hourly file for each line's own time
@@ -26,8 +26,9 @@ hourly() {
 logcat_loop() {
   while true; do
     connect
-    # -T 1: from now on (on a reconnect the gap is lost, not duplicated)
-    adb -s "$TV" logcat -v threadtime -v epoch -b main,system,crash,events -T 1 2>&1 | hourly logcat
+    # Carry on from the last line recorded (after a TV restart that's the whole boot); first run: from now.
+    last=$(cat "$(ls /out/logcat-*.log 2>/dev/null | tail -1)" 2>/dev/null | tail -1 | cut -d' ' -f1)
+    adb -s "$TV" logcat -v threadtime -v epoch -b main,system,crash,events -T "${last:-1}" 2>&1 | hourly logcat
     sleep 5
   done
 }
