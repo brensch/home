@@ -253,6 +253,29 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # Rolling record of the living-room TV over ADB (logcat + playback/video-frame/thread samples every 5 s,
+  # last 6 h in data/tvlog), for chasing playback freezes after the fact. Read with config/tv/tvlog.sh.
+  # Needs USB debugging on the TV; uses this server's approved key in ~/.config/adb (root-owned).
+  tvlog:
+    build: ./config/tv
+    image: homelab-tvlog:1
+    container_name: tvlog
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/recorder.sh"]
+    environment:
+      - TZ=America/Los_Angeles
+    volumes:
+      - ./config/tv/recorder.sh:/recorder.sh:ro
+      - /home/brensch/.config/adb:/root/.android
+      - ./data/tvlog:/out
+    networks:
+      - home_default
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   palworld:
     image: thijsvanloef/palworld-server-docker:latest
     container_name: palworld

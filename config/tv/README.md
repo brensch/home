@@ -16,13 +16,26 @@ Everything here goes through `tv.sh`, which runs adb in a throwaway container wi
 the key in `~/.config/adb` (already approved on the TV). On the TV first:
 Settings → Device Preferences → Developer options → **USB debugging: on**.
 (Developer options appears after pressing Build 7 times under Device Preferences → About.)
-Switch it back off when done; it's a remote-control port on the network.
+Since 2026-10-17 it stays on, for the recorder below (only approved keys can connect). Android drops an
+approval after 7 days without a connection; the recorder's open connection keeps it alive. If adb says
+"unauthorized", accept the "Allow USB debugging?" prompt on the TV with "Always allow".
 
     config/tv/tv.sh status            # anything from packages.txt that's enabled again
     config/tv/tv.sh apply             # disable everything in packages.txt
     config/tv/tv.sh enable-updates    # just the [updates] group on
     config/tv/tv.sh disable-updates   # and off again
     config/tv/tv.sh adb shell ...     # anything else
+
+## Recorder (tvlog)
+
+The `tvlog` container (~/home compose, `recorder.sh`) keeps the last 6 hours of the TV in `data/tvlog/`:
+its whole logcat, and every 5 s the playback state, how many video frames reached the screen (SurfaceFlinger's
+frame times for the app's video layer), memory and the busiest threads. So a glitch can be read afterwards:
+
+    config/tv/tvlog.sh 60            # the last 60 s, state then logcat
+    config/tv/tvlog.sh 120 video     # only the video/audio pipeline's log lines
+    config/tv/tvlog.sh 60 state
+    config/tv/tvlog.sh frozen 2      # samples in the last 2 h where the app was playing but no frames were shown
 
 ## Updating everything
 
