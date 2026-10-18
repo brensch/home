@@ -1,0 +1,13 @@
+[Unit]
+Description=Limit the google-tunnel container to the VM's SSH port
+After=docker.service
+Requires=docker.service
+PartOf=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/google-tunnel-egress
+
+[Install]
+WantedBy=docker.service

@@ -1,0 +1,21 @@
+# Imported into the global options of /etc/caddy/Caddyfile by the home repo's config/google-relay (vm/setup.sh).
+# TLS for hass-google.brensch.com is not Caddy's: it goes through unopened, after a PROXY v2 header with the
+# client's address, to 127.0.0.1:47443, where the house's SSH tunnel listens. This VM never holds that name's
+# certificate. Every other name falls through to Caddy's own TLS as before.
+# A server block for :443 replaces the catch-all `servers` one there, so it repeats `protocols h1 h2` (UDP 443 is
+# snek's).
+servers :443 {
+	protocols h1 h2
+	listener_wrappers {
+		layer4 {
+			@google tls sni hass-google.brensch.com
+			route @google {
+				proxy {
+					proxy_protocol v2
+					upstream 127.0.0.1:47443
+				}
+			}
+		}
+		tls
+	}
+}

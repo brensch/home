@@ -35,6 +35,8 @@ services:
     stop_grace_period: 2m
     networks:
       - home_default
+      # Shared with google-relay alone: Google's fulfillment and token requests arrive this way.
+      - google_hass
     logging:
       driver: "json-file"
       options:
@@ -312,6 +314,78 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # Google's only way in (config/google-relay/README.md): the schlift.com VM passes TLS for hass-google.brensch.com
+  # through unopened, down an SSH tunnel this house dials out (google-tunnel), to google-relay, which terminates it
+  # and lets exactly two requests through to Home Assistant. Neither container can reach anything else: the relay
+  # sits on two internal networks (the tunnel's, and one shared with Home Assistant alone), and the tunnel's own
+  # network may reach only the VM's SSH port (host/google-tunnel-egress, installed by `make host`).
+  google-relay:
+    build: ./config/google-relay/relay
+    image: homelab-google-relay
+    container_name: google-relay
+    restart: unless-stopped
+    # uid 0 only because Caddy's certificate files are root's and 0600; no capabilities, read-only, nothing writable.
+    user: "0:0"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 128m
+    environment:
+      RELAY_HOST: hass-google.brensch.com
+      RELAY_CLIENT_ID: https://oauth-redirect.googleusercontent.com/r/passenger-princess-protector
+      RELAY_GOOGLE_RANGES: /ranges/google-ranges.txt
+      RELAY_GOOGLE_RANGES_MODE: log
+    volumes:
+      # Only this name's certificate out of Caddy's store, read-only (Caddy renews it; the relay reloads it).
+      - type: volume
+        source: caddy_data
+        target: /certs
+        read_only: true
+        volume:
+          subpath: caddy/certificates/acme-v02.api.letsencrypt.org-directory/hass-google.brensch.com
+      - ./data/google-relay/google-ranges.txt:/ranges/google-ranges.txt:ro
+    networks:
+      google_tunnel:
+      google_hass:
+        ipv4_address: 172.31.97.2 # Home Assistant trusts this address's X-Forwarded-For
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  google-tunnel:
+    build: ./config/google-relay/tunnel
+    image: homelab-google-tunnel
+    container_name: google-tunnel
+    restart: unless-stopped
+    user: "1000:1000"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 16
+    mem_limit: 64m
+    tmpfs:
+      - /tmp:size=1m,mode=1777
+    volumes:
+      # `make key` in config/google-relay; only the VM's harelay user accepts it, and only to listen on its loopback.
+      - /home/brensch/.config/google-relay/tunnel_key:/run/tunnel_key:ro
+    depends_on:
+      - google-relay
+    networks:
+      - google_egress
+      - google_tunnel
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 volumes:
   caddy_data: {}
   caddy_config: {}
@@ -321,4 +395,25 @@ networks:
     external: true
   houses_edge:
     external: true
+  # The Google relay's (config/google-relay). Fixed bridge names, for the host firewall rules (`make host`).
+  google_hass:
+    internal: true
+    driver_opts:
+      com.docker.network.bridge.name: br-google-ha
+    ipam:
+      config:
+        - subnet: 172.31.97.0/29
+  google_tunnel:
+    internal: true
+    driver_opts:
+      com.docker.network.bridge.name: br-google-tun
+    ipam:
+      config:
+        - subnet: 172.31.97.8/29
+  google_egress:
+    driver_opts:
+      com.docker.network.bridge.name: br-google-egr
+    ipam:
+      config:
+        - subnet: 172.31.97.16/29
 
