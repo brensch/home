@@ -44,6 +44,49 @@ services:
         max-file: "3"
   # Caddy (reverse proxy) is optional and starts after HA
 
+  # Google Home (and any other Matter controller) reaches Home Assistant through this: a Matter bridge on the LAN,
+  # exposing the entities labelled "Google Home" (every light and the piano plug; never the media, fridge or desk
+  # plugs). Google's speakers control them over the LAN; nothing is reachable from the internet. Community project
+  # (RiDDiX/home-assistant-matter-hub, the maintained successor of t0bst4r's), pinned: read its release notes before
+  # moving it. Matter needs the host's network (mDNS, IPv6 link-local), so UFW, not Docker, limits who reaches it:
+  # 5540/udp (Matter) and 5353/udp (mDNS) from the LAN, the web UI (8482, basic auth) from the LAN and WireGuard.
+  # It logs in to Home Assistant as the non-admin, local-only "Matter Hub" user. Secrets (that user's token, the
+  # web UI login) in ~/.config/matter-hub/env; the pairing (Matter fabrics) in data/matter-hub, so losing that
+  # means pairing again.
+  matter-hub:
+    image: ghcr.io/riddix/home-assistant-matter-hub:2.0.58@sha256:3b1aa47b49d6f99dac336633f5a3f3ceed7a340b4e9cd4bdd90fbebd0e32db4e
+    container_name: matter-hub
+    restart: unless-stopped
+    network_mode: host
+    user: "1000:1000"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 768m
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    env_file:
+      - /home/brensch/.config/matter-hub/env
+    environment:
+      HAMH_HOME_ASSISTANT_URL: http://127.0.0.1:8123/
+      HAMH_HTTP_PORT: "8482"
+      HAMH_MDNS_NETWORK_INTERFACE: enp47s0
+      HAMH_LOG_LEVEL: info
+      HOME: /tmp
+      TZ: America/Los_Angeles
+    volumes:
+      - ./data/matter-hub:/data
+    depends_on:
+      - homeassistant
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   # MQTT, for the plants service (~/plants) to announce each plant as a device to Home Assistant. Logins only
   # (config/mosquitto/passwd: homeassistant, plants), an ACL, and no published port: home_default only.
   # After editing passwd/acl, reload with `docker exec mosquitto kill -HUP 1`, NOT `docker kill -s HUP mosquitto`:
