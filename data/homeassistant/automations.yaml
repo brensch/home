@@ -620,3 +620,51 @@
       message: "{{ message }}"
   mode: single
 
+- id: suckist_needs_help
+  alias: Suckist needs help
+  description: >-
+    Tell both phones when the Roborock (Suckist) or its dock needs a person: the robot reports an error (stuck,
+    brush tangled, ...), the dock reports one, the clean water tank is empty or the dirty one full. Each condition
+    alerts once when it starts (after a minute, so passing blips don't), not again until it clears.
+  triggers:
+  - trigger: state
+    entity_id: sensor.suckist_vacuum_error
+    not_to: [none, unknown, unavailable]
+    for: 00:01:00
+    id: robot
+  - trigger: state
+    entity_id: sensor.suckist_dock_dock_error
+    not_to: [ok, unknown, unavailable]
+    for: 00:01:00
+    id: dock
+  - trigger: state
+    entity_id: [binary_sensor.suckist_dock_clean_water_box, binary_sensor.suckist_water_shortage]
+    from: "off"
+    to: "on"
+    for: 00:01:00
+    id: clean_water
+  - trigger: state
+    entity_id: binary_sensor.suckist_dock_dirty_water_box
+    from: "off"
+    to: "on"
+    for: 00:01:00
+    id: dirty_water
+  conditions: []
+  actions:
+  - variables:
+      message: >-
+        {% if trigger.id == 'robot' %}Suckist is stuck: {{ states('sensor.suckist_vacuum_error') | replace('_', ' ') }}.
+        {% elif trigger.id == 'dock' %}The dock has a problem: {{ states('sensor.suckist_dock_dock_error') | replace('_', ' ') }}.
+        {% elif trigger.id == 'clean_water' %}The dock's clean water tank needs filling.
+        {% else %}The dock's dirty water tank needs emptying.{% endif %}
+  - action: notify.mobile_app_schlixel
+    data:
+      title: Suckist
+      message: "{{ message | trim }}"
+  - action: notify.send_message
+    target:
+      entity_id: notify.alyssas_iphone
+    data:
+      title: Suckist
+      message: "{{ message | trim }}"
+  mode: queued

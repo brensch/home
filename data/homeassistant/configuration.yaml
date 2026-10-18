@@ -120,6 +120,12 @@ lovelace:
       icon: mdi:cctv
       show_in_sidebar: true
       filename: dashboards/camera.yaml
+    vacuum-dash:
+      mode: yaml
+      title: Vacuum
+      icon: mdi:robot-vacuum
+      show_in_sidebar: true
+      filename: dashboards/vacuum.yaml
 
 # On while movie mode has the living room dimmed; its pre-film look is saved on
 # the devices by light_memory (survives restarts, unlike scene.create).

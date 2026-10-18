@@ -1,0 +1,199 @@
+# Suckist, the Roborock Qrevo S (roborock.vacuum.a104) and its dock. Roborock integration (cloud login for setup,
+# then commands over the LAN to 192.168.20.10:58867; the robot lives on its own VLAN, see ~/CLAUDE.md).
+# Cleaning by room: name the rooms in the Roborock app, map them to HA areas in the vacuum's entity settings
+# ("Areas"), then vacuum.clean_area.
+views:
+- title: Vacuum
+  path: vacuum
+  icon: mdi:robot-vacuum
+  type: sections
+  max_columns: 3
+  sections:
+  - type: grid
+    cards:
+    - type: heading
+      heading: Suckist
+      icon: mdi:robot-vacuum
+      badges:
+      - {type: entity, entity: sensor.suckist_battery, show_state: true, show_icon: true}
+      - {type: entity, entity: sensor.suckist_current_room, show_state: true, show_icon: true}
+    - type: tile
+      entity: vacuum.suckist
+      name: Suckist
+      vertical: false
+      grid_options: {columns: full}
+      features_position: bottom
+      features:
+      - type: vacuum-commands
+        commands: [start_pause, stop, return_home, locate, clean_spot]
+      - type: vacuum-fan-speed
+    - type: tile
+      entity: sensor.suckist_status
+      name: Doing
+    - type: tile
+      entity: sensor.suckist_vacuum_error
+      name: Problem
+      icon: mdi:alert-circle-outline
+    - type: tile
+      entity: select.suckist_cleaning_mode
+      name: Mode
+      grid_options: {columns: full}
+      features_position: inline
+      features:
+      - type: select-options
+    - type: tile
+      entity: select.suckist_mop_intensity
+      name: Mop water
+      grid_options: {columns: full}
+      features_position: inline
+      features:
+      - type: select-options
+    - type: tile
+      entity: select.suckist_mop_mode
+      name: Mop route
+      grid_options: {columns: full}
+      features_position: inline
+      features:
+      - type: select-options
+  - type: grid
+    cards:
+    - type: heading
+      heading: Map
+      icon: mdi:map-outline
+    # Roborock's map as an image, redrawn while it cleans.
+    - type: picture-entity
+      entity: image.suckist_map_0
+      show_name: false
+      show_state: false
+      grid_options: {columns: full}
+  - type: grid
+    cards:
+    - type: heading
+      heading: Dock
+      icon: mdi:home-import-outline
+    - type: tile
+      entity: sensor.suckist_dock_dock_error
+      name: Dock
+    - type: tile
+      entity: binary_sensor.suckist_dock_clean_water_box
+      name: Clean water
+    - type: tile
+      entity: binary_sensor.suckist_dock_dirty_water_box
+      name: Dirty water
+    - type: tile
+      entity: sensor.suckist_dock_mop_drying_remaining_time
+      name: Mop drying left
+    # These three switches start the dock doing it now (and show while it is).
+    - type: tile
+      entity: switch.suckist_dock_dust_emptying
+      name: Empty the bin
+      icon: mdi:delete-empty-outline
+    - type: tile
+      entity: switch.suckist_dock_mop_washing
+      name: Wash the mop
+      icon: mdi:water-sync
+    - type: tile
+      entity: switch.suckist_dock_mop_drying
+      name: Dry the mop
+      icon: mdi:fan
+    - type: tile
+      entity: select.suckist_dock_empty_mode
+      name: Auto-empty
+      grid_options: {columns: full}
+      features_position: inline
+      features:
+      - type: select-options
+  - type: grid
+    cards:
+    - type: heading
+      heading: Maintenance
+      icon: mdi:wrench-outline
+    - type: markdown
+      grid_options: {columns: full}
+      content: >-
+        Hours left before each part is due; negative means overdue. Hold a tile to reset its timer after replacing
+        or cleaning that part.
+    - type: tile
+      entity: sensor.suckist_main_brush_time_left
+      name: Main brush
+      icon: mdi:brush
+      hold_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.suckist_reset_main_brush_consumable}, confirmation: {text: "Reset the main brush timer?"}}
+    - type: tile
+      entity: sensor.suckist_side_brush_time_left
+      name: Side brush
+      icon: mdi:brush-variant
+      hold_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.suckist_reset_side_brush_consumable}, confirmation: {text: "Reset the side brush timer?"}}
+    - type: tile
+      entity: sensor.suckist_filter_time_left
+      name: Filter
+      icon: mdi:air-filter
+      hold_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.suckist_reset_air_filter_consumable}, confirmation: {text: "Reset the filter timer?"}}
+    - type: tile
+      entity: sensor.suckist_sensor_time_left
+      name: Sensors (wipe)
+      icon: mdi:eye-outline
+      hold_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.suckist_reset_sensor_consumable}, confirmation: {text: "Reset the sensor cleaning timer?"}}
+    - type: tile
+      entity: sensor.suckist_dock_strainer_time_left
+      name: Dock strainer
+      icon: mdi:filter-outline
+      hold_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.suckist_dock_reset_strainer_consumable}, confirmation: {text: "Reset the dock strainer timer?"}}
+    - type: tile
+      entity: sensor.suckist_dock_maintenance_brush_time_left
+      name: Dock brush
+      icon: mdi:brush-outline
+      hold_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.suckist_dock_reset_cleaning_brush_consumable}, confirmation: {text: "Reset the dock brush timer?"}}
+  - type: grid
+    cards:
+    - type: heading
+      heading: Cleans
+      icon: mdi:history
+    - type: tile
+      entity: sensor.suckist_last_clean_end
+      name: Last finished
+    - type: tile
+      entity: sensor.suckist_cleaning_time
+      name: Last took
+    - type: tile
+      entity: sensor.suckist_cleaning_area
+      name: Last area
+    - type: tile
+      entity: sensor.suckist_total_cleaning_count
+      name: Cleans ever
+    - type: tile
+      entity: sensor.suckist_total_cleaning_area
+      name: Area ever
+    - type: tile
+      entity: sensor.suckist_total_cleaning_time
+      name: Time ever
+    - type: history-graph
+      title: Battery · %
+      hours_to_show: 48
+      entities:
+      - entity: sensor.suckist_battery
+        name: Battery
+  - type: grid
+    cards:
+    - type: heading
+      heading: Settings
+      icon: mdi:cog-outline
+    - type: tile
+      entity: switch.suckist_do_not_disturb
+      name: Do not disturb
+    - type: tile
+      entity: time.suckist_do_not_disturb_begin
+      name: Quiet from
+    - type: tile
+      entity: time.suckist_do_not_disturb_end
+      name: Quiet until
+    - type: tile
+      entity: number.suckist_volume
+      name: Voice volume
+      grid_options: {columns: full}
+      features_position: inline
+      features:
+      - type: numeric-input
+        style: slider
+    - type: tile
+      entity: switch.suckist_dock_child_lock
+      name: Child lock
