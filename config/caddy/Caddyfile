@@ -142,10 +142,3 @@ router.{$DOMAIN} {
     }
     header X-Robots-Tag "noindex, nofollow, noarchive"
 }
-
-# Only so Caddy keeps a certificate for the Google relay (config/google-relay): the relay terminates TLS for this
-# name with Caddy's certificate files, mounted read-only. The name points at the schlift.com VM, never here, so
-# nothing should arrive; anything that does is dropped.
-hass-google.{$DOMAIN} {
-	abort
-}

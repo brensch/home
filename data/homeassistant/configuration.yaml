@@ -32,24 +32,6 @@ tts:
 # http: was migrated into .storage/http (2026-10-05) and is managed under Settings > System > Network now:
 # X-Forwarded-For on, trusted proxies 172.18.0.0/16 (home_default, i.e. Caddy) and 127.0.0.1, IP bans after 20 tries.
 
-google_assistant:
-  project_id: passenger-princess-protector
-  service_account: !include SERVICE_ACCOUNT.json
-  report_state: true # This allows syncing the state with Google Home
-  # Plugs whose power must not be cut by voice ("turn off everything"):
-  # media powers this server, fridge the fridge, desk the PC and Mac mini.
-  entity_config:
-    switch.media_relay:
-      expose: false
-    switch.fridge_relay:
-      expose: false
-    switch.desk_relay:
-      expose: false
-  expose_by_default: true # Temporarily expose all entities to test
-  exposed_domains:
-    - switch
-    - light
-    - camera
 homeassistant:
   unit_system: metric
   external_url: https://hass.brensch.com
