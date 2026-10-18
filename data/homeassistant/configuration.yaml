@@ -133,6 +133,55 @@ input_boolean:
   movie_dimmed:
     name: Movie mode has the living room dimmed
     icon: mdi:movie-open
+  # Suckist's auto-clean (automations suckist_auto_clean / _home_again / _finished, the Vacuum page). Its cleaning
+  # windows are schedule.suckist_cleaning_windows, a UI helper (YAML schedules can't be edited in the UI).
+  suckist_auto:
+    name: Auto-clean
+    icon: mdi:robot-vacuum
+  suckist_only_when_away:
+    name: Only when we're out
+    icon: mdi:home-export-outline
+  suckist_once_a_day:
+    name: At most once a day
+    icon: mdi:numeric-1-circle-outline
+  suckist_when_we_leave:
+    name: Clean when we leave if it's due
+    icon: mdi:walk
+  suckist_dock_when_home:
+    name: Dock when someone gets home
+    icon: mdi:home-import-outline
+  suckist_notify:
+    name: Tell us when it runs
+    icon: mdi:bell-outline
+  suckist_skip_next:
+    name: Skip the next run
+    icon: mdi:debug-step-over
+
+input_number:
+  suckist_due_days:
+    name: Due after
+    icon: mdi:calendar-clock
+    min: 1
+    max: 7
+    step: 0.5
+    unit_of_measurement: days
+    mode: slider
+
+input_select:
+  suckist_auto_mode:
+    name: Auto-clean mode
+    icon: mdi:spray-bottle
+    options:
+      - As set on the robot
+      - Vacuum
+      - Vacuum and mop
+      - Mop
+
+input_text:
+  suckist_last_auto:
+    name: Last auto-clean
+    icon: mdi:history
+    max: 255
 
 # Internet reachability is separate from the router's controller connection.
 binary_sensor:
@@ -194,6 +243,14 @@ template:
           event: "{{ trigger.payload_json.id }}"
           name: "{{ trigger.payload_json.name }}"
           score: "{{ trigger.payload_json.score }}"
+  # Suckist (Roborock): how long since it last finished a clean, for "clean when we leave if it's due".
+  - sensor:
+      - name: Suckist days since clean
+        unique_id: suckist_days_since_clean
+        unit_of_measurement: d
+        icon: mdi:calendar-refresh
+        availability: "{{ as_datetime(states('sensor.suckist_last_clean_end')) is not none }}"
+        state: "{{ ((now() - as_datetime(states('sensor.suckist_last_clean_end'))).total_seconds() / 86400) | round(1) }}"
   # Free space as a percentage, for the Health page and the disk alert (System Monitor reports usage % and free GiB).
   - sensor:
       - name: Server disk free percent

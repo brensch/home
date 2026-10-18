@@ -55,6 +55,110 @@ views:
       features_position: inline
       features:
       - type: select-options
+  # Auto-clean: automations suckist_auto_clean / suckist_home_again / suckist_finished. The windows are a schedule
+  # helper: tap it, then the cog, to drag the blocks around.
+  - type: grid
+    cards:
+    - type: heading
+      heading: Auto-clean
+      icon: mdi:calendar-clock
+      badges:
+      - {type: entity, entity: schedule.suckist_cleaning_windows, name: Window, show_name: true, show_state: true, show_icon: false}
+      - {type: entity, entity: zone.home, name: Home, show_name: true, show_state: true, show_icon: false}
+    - type: tile
+      entity: input_boolean.suckist_auto
+      name: Auto-clean
+      grid_options: {columns: full}
+      features_position: inline
+      features:
+      - type: toggle
+    - type: markdown
+      grid_options: {columns: full}
+      content: >-
+        {% set win = is_state('schedule.suckist_cleaning_windows', 'on') %}
+        {% set nxt = state_attr('schedule.suckist_cleaning_windows', 'next_event') %}
+        {% set away = states('zone.home') | int(1) == 0 %}
+        {% set only_away = is_state('input_boolean.suckist_only_when_away', 'on') %}
+        {% set days = states('sensor.suckist_days_since_clean') | float(0) %}
+        {% set due_after = states('input_number.suckist_due_days') | float(2) %}
+        {% set began = as_datetime(states('sensor.suckist_last_clean_begin')) %}
+        {% set done_today = is_state('input_boolean.suckist_once_a_day', 'on') and began is not none
+           and as_local(began).date() == now().date() %}
+        {% if is_state('input_boolean.suckist_auto', 'off') %}
+        **Auto-clean is off.** It only runs when you start it.
+        {% else %}
+        {% if win %}**A cleaning window is open** until {{ as_local(nxt).strftime('%H:%M') if nxt else 'later' }}.
+        {%- if done_today %} It has already cleaned today.
+        {%- elif only_away and not away %} It'll start once you've both left.
+        {%- elif not is_state('vacuum.suckist', 'docked') %} It's off the dock right now.{% endif %}
+        {% else %}**Next window:** {{ as_local(nxt).strftime('%A %-d %b, %H:%M') if nxt else 'none set' }}
+        {%- if only_away %} (it waits until you've both left){% endif %}.
+        {% endif %}
+
+        {% if is_state('input_boolean.suckist_when_we_leave', 'on') %}
+        {% if days >= due_after %}**Due:** {{ days }} days since it last cleaned, so it cleans next time you both leave.
+        {% else %}Last cleaned {{ days }} days ago; due in {{ (due_after - days) | round(1) }} days, then it cleans
+        next time you both leave.{% endif %}
+        {% endif %}
+
+        {% if is_state('input_boolean.suckist_skip_next', 'on') %}**The next run will be skipped.**{% endif %}
+        {% endif %}
+    - type: tile
+      entity: schedule.suckist_cleaning_windows
+      name: Cleaning windows
+      icon: mdi:calendar-edit
+      grid_options: {columns: full}
+    - type: tile
+      entity: input_boolean.suckist_only_when_away
+      name: Only when we're out
+      features_position: inline
+      features: [{type: toggle}]
+    - type: tile
+      entity: input_boolean.suckist_once_a_day
+      name: Once a day max
+      features_position: inline
+      features: [{type: toggle}]
+    - type: tile
+      entity: input_boolean.suckist_when_we_leave
+      name: Clean when we leave if due
+      features_position: inline
+      features: [{type: toggle}]
+    - type: tile
+      entity: input_boolean.suckist_dock_when_home
+      name: Dock when we're back
+      features_position: inline
+      features: [{type: toggle}]
+    - type: tile
+      entity: input_boolean.suckist_notify
+      name: Tell us when it runs
+      features_position: inline
+      features: [{type: toggle}]
+    - type: tile
+      entity: input_boolean.suckist_skip_next
+      name: Skip the next run
+      features_position: inline
+      features: [{type: toggle}]
+    - type: tile
+      entity: input_number.suckist_due_days
+      name: Due after
+      grid_options: {columns: full}
+      features_position: inline
+      features:
+      - type: numeric-input
+        style: slider
+    - type: tile
+      entity: input_select.suckist_auto_mode
+      name: Mode
+      grid_options: {columns: full}
+      features_position: inline
+      features:
+      - type: select-options
+    - type: tile
+      entity: sensor.suckist_days_since_clean
+      name: Since last clean
+    - type: tile
+      entity: input_text.suckist_last_auto
+      name: Last auto-clean
   - type: grid
     cards:
     - type: heading
