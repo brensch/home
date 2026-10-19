@@ -23,15 +23,9 @@ views:
     - type: custom:energy-cost-card
       title: Electricity
       grid_options: {columns: full}
-  # Two columns: in one, the table's Energy and Cost columns were cut off.
   - type: grid
-    column_span: 2
+    column_span: 3
     cards:
     - type: energy-sources-table
       title: Sources
-      grid_options: {columns: full}
-  - type: grid
-    cards:
-    - type: energy-sankey
-      title: Energy flow
       grid_options: {columns: full}

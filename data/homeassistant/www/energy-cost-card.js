@@ -4,8 +4,10 @@
 // It follows the dashboard's energy-date-selection: it subscribes to the same energy collection the energy-*
 // cards use (hass.connection["_energy_<dashboard url>"], or "_<collection_key>") for the range and the Energy
 // settings, then fetches the meter, plug and cost statistics itself, all at one period: hourly up to 2 days,
-// daily up to 5 weeks, weekly up to ~3 months, monthly beyond (HA's own cards jump from daily to monthly). Drawn with HA's own ha-chart-base, so it looks like the other charts.
-// Both are frontend internals: if a HA update breaks this card, it shows the error instead of a chart.
+// daily up to 5 weeks, weekly up to ~3 months, monthly beyond (HA's own cards jump from daily to monthly).
+// Clicking a bar sets the date picker to that bar (see _drill). Drawn with HA's own ha-chart-base, so it looks
+// like the other charts. The collection and ha-chart-base are frontend internals: if a HA update breaks this
+// card, it shows the error instead of a chart.
 const PALETTE = ['#4269d0', '#efb118', '#ff725c', '#6cc5b0', '#3ca951', '#ff8ab7', '#a463f2', '#97bbf5'];
 
 class EnergyCostCard extends HTMLElement {
@@ -53,6 +55,7 @@ class EnergyCostCard extends HTMLElement {
       for (let i = 0; i < 60 && !(collection = this._hass.connection[key]); i++) await new Promise(r => setTimeout(r, 250));
       if (!collection) throw new Error(`no energy date picker on this dashboard (${key})`);
       this._unsub?.();
+      this._collection = collection;
       this._unsub = collection.subscribe(data => this._update(data).catch(e => this._message(`Energy chart: ${e.message}`)));
     } catch (e) {
       this._started = false;
@@ -65,7 +68,7 @@ class EnergyCostCard extends HTMLElement {
     const grid = prefs?.energy_sources?.find(s => s.type === 'grid');
     if (!grid?.stat_energy_from) { this._message('No grid source in the Energy settings.'); return; }
     const days = ((end || new Date()) - start) / 86400000;
-    const period = days > 95 ? 'month' : days > 35 ? 'week' : days > 2 ? 'day' : 'hour';
+    const period = this._period = days > 95 ? 'month' : days > 35 ? 'week' : days > 2 ? 'day' : 'hour';
     const ids = [grid.stat_energy_from, ...prefs.device_consumption.map(d => d.stat_consumption), grid.stat_cost].filter(Boolean);
     const stats = await this._hass.callWS({
       type: 'recorder/statistics_during_period', start_time: start.toISOString(), end_time: end?.toISOString(),
@@ -76,7 +79,7 @@ class EnergyCostCard extends HTMLElement {
     const points = list => new Map((list || []).map(p => [p.start, Math.max(0, p.change || 0)]));
     const meter = points(stats[grid.stat_energy_from]);
     const devices = prefs.device_consumption.map(d => ({name: d.name || d.stat_consumption, values: points(stats[d.stat_consumption])}));
-    const times = [...new Set([...meter.keys(), ...devices.flatMap(d => [...d.values.keys()])])].sort((a, b) => a - b);
+    const times = this._times = [...new Set([...meter.keys(), ...devices.flatMap(d => [...d.values.keys()])])].sort((a, b) => a - b);
 
     const style = getComputedStyle(this);
     const color = i => style.getPropertyValue(`--graph-color-${i + 1}`).trim() || PALETTE[i % PALETTE.length];
@@ -110,6 +113,8 @@ class EnergyCostCard extends HTMLElement {
           axisLabel: {formatter: v => `$${fmt(v, v < 10 ? 2 : 0)}`}},
       ],
       grid: {top: 30, left: 8, right: 8, bottom: 36, containLabel: true},
+      // Any dataZoom turns off ha-chart-base's double-click / ctrl-drag zoom; clicking a bar drills in instead.
+      dataZoom: [],
       legend: {show: true, bottom: 0, left: 'center'},
       tooltip: {
         trigger: 'axis',
@@ -132,12 +137,34 @@ class EnergyCostCard extends HTMLElement {
       this._chart = document.createElement('ha-chart-base');
       this._chart.height = '320px';
       body.appendChild(this._chart);
+      // Only a click on a bar (or a cost point) drills in.
+      this._chart.addEventListener('chart-click', e => this._drill(e.detail?.value?.[0]));
     }
     this._chart.hass = this._hass;
     this._chart.options = options;
     this._chart.data = series;
   }
 }
+
+// Clicking a bar narrows the dashboard's date picker to that bar: a month or week shows its days, a day its hours.
+// Hours are the bottom; the date picker goes back out. A bar ends where the next one starts (statistics buckets
+// follow HA's time zone, which the browser's may not be); the last bar's end is worked out from its period.
+EnergyCostCard.prototype._drill = function (t) {
+  if (t === undefined || !this._collection || this._period === 'hour') return;
+  const start = new Date(t);
+  const next = this._times?.find(x => x > t);
+  let end;
+  if (next !== undefined) end = new Date(next - 1);
+  else {
+    end = new Date(start);
+    if (this._period === 'month') end.setMonth(end.getMonth() + 1);
+    else if (this._period === 'week') end.setDate(end.getDate() + 7);
+    else end.setDate(end.getDate() + 1);
+    end.setMilliseconds(end.getMilliseconds() - 1);
+  }
+  this._collection.setPeriod(start, end);
+  this._collection.refresh();
+};
 
 customElements.define('energy-cost-card', EnergyCostCard);
 window.customCards = window.customCards || [];
