@@ -265,6 +265,27 @@ template:
         unit_of_measurement: m²
         state_class: measurement
         state: "{{ entry.area if fresh else 0 }}"
+  # The TV's power for the dashboards, ignoring the second-long drops: in standby it loses both its connections
+  # (Android TV Remote and Cast) every few minutes and they come straight back. Unavailable only after a minute.
+  - triggers:
+      - trigger: state
+        entity_id: media_player.tv
+        not_to: unavailable
+      - trigger: state
+        entity_id: media_player.tv
+        to: unavailable
+        for: 00:01:00
+      - trigger: homeassistant
+        event: start
+      - trigger: event
+        event_type: event_template_reloaded
+    sensor:
+      - name: TV
+        unique_id: tv_power
+        icon: "{{ 'mdi:television' if is_state('media_player.tv', 'on') else 'mdi:television-off' }}"
+        # Only re-rendered by the triggers above, so a drop shows here only once it has lasted a minute.
+        availability: "{{ not is_state('media_player.tv', 'unavailable') }}"
+        state: "{{ 'On' if is_state('media_player.tv', 'on') else 'Off' }}"
   # Free space as a percentage, for the Health page and the disk alert (System Monitor reports usage % and free GiB).
   - sensor:
       - name: Server disk free percent

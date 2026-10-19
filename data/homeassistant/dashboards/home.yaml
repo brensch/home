@@ -113,9 +113,11 @@ views:
           - type: heading
             heading: TV
             icon: mdi:television
+          # sensor.tv rides out the TV's second-long connection drops; tap for the real player.
           - type: tile
-            entity: media_player.tv
+            entity: sensor.tv
             name: TV
+            tap_action: {action: more-info, entity: media_player.tv}
           # Only while something's actually cast: in standby the TV drops both its connections (Cast and Android TV
           # Remote) every few minutes for about a second, and "not off" let that "unavailable" flash the card up.
           - type: conditional

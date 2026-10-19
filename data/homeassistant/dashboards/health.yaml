@@ -41,7 +41,7 @@ views:
       - light.uplight
       - light.balcony
       - light.closet
-      - media_player.tv
+      - sensor.tv
       - switch.fridge_relay
       - switch.desk_relay
       - sensor.media_power
