@@ -155,7 +155,8 @@ all_lights_off:
       target:
         entity_id: all
 
-# Cleans some of Suckist's rooms now (the Vacuum page's room buttons). Rooms are the Roborock map's segment ids:
+# Cleans some of Suckist's rooms now (the Vacuum page's Clean now buttons), mopping too if "Mop as well"
+# (input_boolean.suckist_adhoc_mop) is on; no rooms means the whole house. Rooms are the Roborock map's segment ids:
 # 16 Living room, 17 Bathroom, 19 Bedroom, 21 Kitchen, 22 Corridor (roborock.get_maps lists them; they change if
 # the map's rooms are redrawn). A new request replaces whatever it was doing.
 suckist_clean_rooms:
@@ -163,15 +164,27 @@ suckist_clean_rooms:
   icon: mdi:robot-vacuum
   fields:
     rooms:
-      description: Roborock segment ids
+      description: Roborock segment ids; empty for everywhere
       example: "[21]"
-      required: true
   sequence:
-    - action: vacuum.send_command
+    - action: select.select_option
       target:
-        entity_id: vacuum.suckist
+        entity_id: select.suckist_cleaning_mode
       data:
-        command: app_segment_clean
-        params:
-          - segments: "{{ rooms | map('int') | list }}"
+        option: "{{ 'vac_and_mop' if is_state('input_boolean.suckist_adhoc_mop', 'on') else 'vacuum' }}"
+    - if:
+        - condition: template
+          value_template: "{{ rooms | default([]) | count > 0 }}"
+      then:
+        - action: vacuum.send_command
+          target:
+            entity_id: vacuum.suckist
+          data:
+            command: app_segment_clean
+            params:
+              - segments: "{{ rooms | map('int') | list }}"
+      else:
+        - action: vacuum.start
+          target:
+            entity_id: vacuum.suckist
   mode: restart

@@ -674,7 +674,8 @@
     Cleans by the robot's own last-clean end (manual runs count). From 2 days after it, starts the next time the house
     is empty (zone.home 0 for 5 minutes), any time of day. If that hasn't happened by the first noon at least 4 days after
     it, starts at noon anyway, home or not. Checks when we leave and every 15 minutes (so it retries until 20:00 if it
-    couldn't start). Never while it's off the dock, never twice in a day. Switch: input_boolean.suckist_auto.
+    couldn't start). Never while it's off the dock, never twice in a day. Switch: input_boolean.suckist_auto; it sets
+    the robot to input_select.suckist_auto_* first.
   triggers:
   - trigger: numeric_state
     entity_id: zone.home
@@ -709,6 +710,33 @@
       message: >-
         Cleaning now{{ ", you're both out" if reason | trim == 'away' else ", it's overdue" }}: it's been
         {{ states('sensor.suckist_days_since_clean') | float(0) | round(1) }} days.
+  # The Vacuum page's "Timed clean settings".
+  - action: select.select_option
+    target:
+      entity_id: select.suckist_cleaning_mode
+    data:
+      option: >-
+        {{ {'Vacuum and mop': 'vac_and_mop', 'Vacuum only': 'vacuum', 'Mop only': 'mop'}
+           [states('input_select.suckist_auto_mode')] | default('vac_and_mop') }}
+  - action: vacuum.set_fan_speed
+    target:
+      entity_id: vacuum.suckist
+    data:
+      fan_speed: >-
+        {{ {'Quiet': 'quiet', 'Balanced': 'balanced', 'Turbo': 'turbo', 'Max': 'max', 'Max+': 'max_plus'}
+           [states('input_select.suckist_auto_suction')] | default('turbo') }}
+  - action: select.select_option
+    target:
+      entity_id: select.suckist_mop_intensity
+    data:
+      option: "{{ states('input_select.suckist_auto_water') | lower if has_value('input_select.suckist_auto_water') else 'medium' }}"
+  - action: select.select_option
+    target:
+      entity_id: select.suckist_mop_mode
+    data:
+      option: >-
+        {{ {'Fast': 'fast', 'Standard': 'standard', 'Deep': 'deep', 'Deep+': 'deep_plus'}
+           [states('input_select.suckist_auto_route')] | default('standard') }}
   - action: vacuum.start
     target:
       entity_id: vacuum.suckist

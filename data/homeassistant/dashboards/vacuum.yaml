@@ -71,7 +71,7 @@ views:
       heading: Clean now
       icon: mdi:gesture-tap
     - type: tile
-      entity: switch.suckist_mop
+      entity: input_boolean.suckist_adhoc_mop
       name: Mop as well
       grid_options: {columns: full}
       features_position: inline
@@ -82,8 +82,8 @@ views:
       grid_options: {columns: 4, rows: 2}
       tap_action:
         action: perform-action
-        perform_action: vacuum.start
-        target: {entity_id: vacuum.suckist}
+        perform_action: script.suckist_clean_rooms
+        data: {rooms: []}
     - type: button
       name: Living room
       icon: mdi:sofa-outline
@@ -124,6 +124,44 @@ views:
         action: perform-action
         perform_action: script.suckist_clean_rooms
         data: {rooms: [22]}
+  # What the automatic cleans use; automation suckist_auto_clean sets them on the robot before each one.
+  - type: grid
+    cards:
+    - type: heading
+      heading: Timed clean settings
+      icon: mdi:calendar-clock
+    - type: tile
+      entity: input_select.suckist_auto_mode
+      name: Mode
+      grid_options: {columns: full}
+      features_position: inline
+      features: [{type: select-options}]
+    - type: tile
+      entity: input_select.suckist_auto_suction
+      name: Suction
+      grid_options: {columns: full}
+      features_position: inline
+      features: [{type: select-options}]
+    - type: tile
+      entity: input_select.suckist_auto_water
+      name: Mop water
+      grid_options: {columns: full}
+      features_position: inline
+      features: [{type: select-options}]
+      visibility:
+      - condition: state
+        entity: input_select.suckist_auto_mode
+        state_not: Vacuum only
+    - type: tile
+      entity: input_select.suckist_auto_route
+      name: Mop route
+      grid_options: {columns: full}
+      features_position: inline
+      features: [{type: select-options}]
+      visibility:
+      - condition: state
+        entity: input_select.suckist_auto_mode
+        state_not: Vacuum only
   - type: grid
     cards:
     - type: heading
