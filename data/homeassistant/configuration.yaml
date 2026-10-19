@@ -202,6 +202,12 @@ mqtt: !include mqtt.yaml
 rest_command:
   frigate_faces:
     url: http://frigate:5000/api/faces
+  # Driving time from a point to home, from OpenStreetMap's public OSRM router (no key; no live traffic). Waze,
+  # HA's usual travel-time integration, answered 403 Forbidden from this server (2026-10-18).
+  drive_home:
+    url: >-
+      https://router.project-osrm.org/route/v1/driving/{{ lon }},{{ lat }};{{ state_attr('zone.home', 'longitude') }},{{ state_attr('zone.home', 'latitude') }}?overview=false
+    timeout: 15
 
 template:
   - triggers:

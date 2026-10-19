@@ -751,3 +751,35 @@
       title: Suckist
       message: "{{ message | trim }}"
   mode: single
+- id: brendan_left_work
+  alias: Brendan left work
+  description: >-
+    Tells Alyssa when Brendan leaves the Work zone (Gridmatic) after being there at least 30 minutes, so driving
+    past doesn't count, with the drive time home from where he is (rest_command.drive_home: OpenStreetMap routing,
+    no traffic, so it says "about").
+  triggers:
+  - trigger: state
+    entity_id: person.brend
+    from: Work
+  conditions:
+  - condition: template
+    value_template: "{{ now() - trigger.from_state.last_changed >= timedelta(minutes=30) }}"
+  actions:
+  - action: rest_command.drive_home
+    data:
+      lat: "{{ state_attr('person.brend', 'latitude') or state_attr('zone.work', 'latitude') }}"
+      lon: "{{ state_attr('person.brend', 'longitude') or state_attr('zone.work', 'longitude') }}"
+    response_variable: route
+    continue_on_error: true
+  - variables:
+      minutes: >-
+        {{ (route.content.routes[0].duration / 60) | round(0) | int
+           if route is defined and route.status == 200 and route.content.routes is defined else none }}
+  - action: notify.send_message
+    target:
+      entity_id: notify.alyssas_iphone
+    data:
+      title: Brendan
+      message: >-
+        Left work{{ ', home in about ' ~ minutes ~ ' min' if minutes else '' }}.
+  mode: single
