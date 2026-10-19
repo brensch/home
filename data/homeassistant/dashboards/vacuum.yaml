@@ -9,156 +9,55 @@ views:
   type: sections
   max_columns: 3
   sections:
+  # The robot's own last-clean time is the only state; automation suckist_auto_clean cleans every 3 days.
   - type: grid
     cards:
-    - type: heading
-      heading: Suckist
-      icon: mdi:robot-vacuum
-      badges:
-      - {type: entity, entity: sensor.suckist_battery, show_state: true, show_icon: true}
-      - {type: entity, entity: sensor.suckist_current_room, show_state: true, show_icon: true}
+    - type: markdown
+      grid_options: {columns: full}
+      content: >-
+        {% set ended = as_datetime(states('sensor.suckist_last_clean_end')) %}
+        {% if ended is none %}<center>Suckist hasn't reported a clean yet.</center>{% else %}
+        {% set secs = (now() - ended).total_seconds() %}
+        {% set d = (secs // 86400) | int %}{% set h = ((secs % 86400) // 3600) | int %}
+        {% set since = (d ~ (' day' if d == 1 else ' days') ~ (', ' ~ h ~ ' h' if h else '')) if d else
+           (h ~ (' hour' if h == 1 else ' hours')) %}
+        <center>
+
+        # {{ since }}
+
+        since Suckist last vacuumed ({{ as_local(ended).strftime('%a %-d %b, %-I:%M %p') }})
+
+        {% if is_state('vacuum.suckist', 'cleaning') %}**Cleaning now.**
+        {% elif is_state('input_boolean.suckist_auto', 'off') %}Auto-clean is off.
+        {% elif secs >= 3 * 86400 %}**Due.** It starts the next time you're both out (9 am to 8 pm).
+        {% else %}Next clean due {{ as_local(ended + timedelta(days=3)).strftime('%a %-I %p') }}, once you're both out.
+        {% endif %}
+        </center>
+        {% endif %}
     - type: tile
       entity: vacuum.suckist
       name: Suckist
-      vertical: false
       grid_options: {columns: full}
       features_position: bottom
       features:
       - type: vacuum-commands
-        commands: [start_pause, stop, return_home, locate, clean_spot]
-      - type: vacuum-fan-speed
-    - type: tile
-      entity: sensor.suckist_status
-      name: Doing
-    - type: tile
-      entity: sensor.suckist_vacuum_error
-      name: Problem
-      icon: mdi:alert-circle-outline
-    - type: tile
-      entity: select.suckist_cleaning_mode
-      name: Mode
-      grid_options: {columns: full}
-      features_position: inline
-      features:
-      - type: select-options
-    - type: tile
-      entity: select.suckist_mop_intensity
-      name: Mop water
-      grid_options: {columns: full}
-      features_position: inline
-      features:
-      - type: select-options
-    - type: tile
-      entity: select.suckist_mop_mode
-      name: Mop route
-      grid_options: {columns: full}
-      features_position: inline
-      features:
-      - type: select-options
-  # Auto-clean: automations suckist_auto_clean / suckist_home_again / suckist_finished. The windows are a schedule
-  # helper: tap it, then the cog, to drag the blocks around.
-  - type: grid
-    cards:
-    - type: heading
-      heading: Auto-clean
-      icon: mdi:calendar-clock
-      badges:
-      - {type: entity, entity: schedule.suckist_cleaning_windows, name: Window, show_name: true, show_state: true, show_icon: false}
-      - {type: entity, entity: zone.home, name: Home, show_name: true, show_state: true, show_icon: false}
+        commands: [start_pause, stop, return_home, locate]
+    - type: conditional
+      conditions:
+      - condition: state
+        entity: sensor.suckist_vacuum_error
+        state_not: none
+      card:
+        type: tile
+        entity: sensor.suckist_vacuum_error
+        name: Problem
+        icon: mdi:alert-circle-outline
     - type: tile
       entity: input_boolean.suckist_auto
-      name: Auto-clean
+      name: Auto-clean every 3 days
       grid_options: {columns: full}
       features_position: inline
-      features:
-      - type: toggle
-    - type: markdown
-      grid_options: {columns: full}
-      content: >-
-        {% set win = is_state('schedule.suckist_cleaning_windows', 'on') %}
-        {% set nxt = state_attr('schedule.suckist_cleaning_windows', 'next_event') %}
-        {% set away = states('zone.home') | int(1) == 0 %}
-        {% set only_away = is_state('input_boolean.suckist_only_when_away', 'on') %}
-        {% set days = states('sensor.suckist_days_since_clean') | float(0) %}
-        {% set due_after = states('input_number.suckist_due_days') | float(2) %}
-        {% set began = as_datetime(states('sensor.suckist_last_clean_begin')) %}
-        {% set done_today = is_state('input_boolean.suckist_once_a_day', 'on') and began is not none
-           and as_local(began).date() == now().date() %}
-        {% if is_state('input_boolean.suckist_auto', 'off') %}
-        **Auto-clean is off.** It only runs when you start it.
-        {% else %}
-        {% if win %}**A cleaning window is open** until {{ as_local(nxt).strftime('%H:%M') if nxt else 'later' }}.
-        {%- if done_today %} It has already cleaned today.
-        {%- elif only_away and not away %} It'll start once you've both left.
-        {%- elif not is_state('vacuum.suckist', 'docked') %} It's off the dock right now.{% endif %}
-        {% else %}**Next window:** {{ as_local(nxt).strftime('%A %-d %b, %H:%M') if nxt else 'none set' }}
-        {%- if only_away %} (it waits until you've both left){% endif %}.
-        {% endif %}
-
-        {% if is_state('input_boolean.suckist_when_we_leave', 'on') %}
-        {% if days >= due_after %}**Due:** {{ days }} days since it last cleaned, so it cleans next time you both leave.
-        {% else %}Last cleaned {{ days }} days ago; due in {{ (due_after - days) | round(1) }} days, then it cleans
-        next time you both leave.{% endif %}
-        {% endif %}
-
-        {% if is_state('input_boolean.suckist_skip_next', 'on') %}**The next run will be skipped.**{% endif %}
-        {% endif %}
-    - type: tile
-      entity: schedule.suckist_cleaning_windows
-      name: Cleaning windows
-      icon: mdi:calendar-edit
-      grid_options: {columns: full}
-    - type: tile
-      entity: input_boolean.suckist_only_when_away
-      name: Only when we're out
-      features_position: inline
       features: [{type: toggle}]
-    - type: tile
-      entity: input_boolean.suckist_once_a_day
-      name: Once a day max
-      features_position: inline
-      features: [{type: toggle}]
-    - type: tile
-      entity: input_boolean.suckist_when_we_leave
-      name: Clean when we leave if due
-      features_position: inline
-      features: [{type: toggle}]
-    - type: tile
-      entity: input_boolean.suckist_dock_when_home
-      name: Dock when we're back
-      features_position: inline
-      features: [{type: toggle}]
-    - type: tile
-      entity: input_boolean.suckist_notify
-      name: Tell us when it runs
-      features_position: inline
-      features: [{type: toggle}]
-    - type: tile
-      entity: input_boolean.suckist_skip_next
-      name: Skip the next run
-      features_position: inline
-      features: [{type: toggle}]
-    - type: tile
-      entity: input_number.suckist_due_days
-      name: Due after
-      grid_options: {columns: full}
-      features_position: inline
-      features:
-      - type: numeric-input
-        style: slider
-    - type: tile
-      entity: input_select.suckist_auto_mode
-      name: Mode
-      grid_options: {columns: full}
-      features_position: inline
-      features:
-      - type: select-options
-    - type: tile
-      entity: sensor.suckist_days_since_clean
-      name: Since last clean
-    - type: tile
-      entity: input_text.suckist_last_auto
-      name: Last auto-clean
   - type: grid
     cards:
     - type: heading
@@ -247,57 +146,3 @@ views:
       name: Dock brush
       icon: mdi:brush-outline
       hold_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.suckist_dock_reset_cleaning_brush_consumable}, confirmation: {text: "Reset the dock brush timer?"}}
-  - type: grid
-    cards:
-    - type: heading
-      heading: Cleans
-      icon: mdi:history
-    - type: tile
-      entity: sensor.suckist_last_clean_end
-      name: Last finished
-    - type: tile
-      entity: sensor.suckist_cleaning_time
-      name: Last took
-    - type: tile
-      entity: sensor.suckist_cleaning_area
-      name: Last area
-    - type: tile
-      entity: sensor.suckist_total_cleaning_count
-      name: Cleans ever
-    - type: tile
-      entity: sensor.suckist_total_cleaning_area
-      name: Area ever
-    - type: tile
-      entity: sensor.suckist_total_cleaning_time
-      name: Time ever
-    - type: history-graph
-      title: Battery · %
-      hours_to_show: 48
-      entities:
-      - entity: sensor.suckist_battery
-        name: Battery
-  - type: grid
-    cards:
-    - type: heading
-      heading: Settings
-      icon: mdi:cog-outline
-    - type: tile
-      entity: switch.suckist_do_not_disturb
-      name: Do not disturb
-    - type: tile
-      entity: time.suckist_do_not_disturb_begin
-      name: Quiet from
-    - type: tile
-      entity: time.suckist_do_not_disturb_end
-      name: Quiet until
-    - type: tile
-      entity: number.suckist_volume
-      name: Voice volume
-      grid_options: {columns: full}
-      features_position: inline
-      features:
-      - type: numeric-input
-        style: slider
-    - type: tile
-      entity: switch.suckist_dock_child_lock
-      name: Child lock

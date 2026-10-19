@@ -671,165 +671,51 @@
 - id: suckist_auto_clean
   alias: Suckist auto-clean
   description: >-
-    Starts Suckist from the Vacuum page's settings. When one of its cleaning windows (schedule.suckist_cleaning_windows)
-    opens it runs, or with "Only when we're out" waits for the house to be empty (zone.home 0 for 5 minutes) while
-    the window is still open. Separately, "Clean when we leave if it's due" runs it whenever we both leave and its
-    last clean finished at least "Due after" days ago, window or not. Never while it's off the dock, never twice in a
-    day with "At most once a day" (counting manual runs), and "Skip the next run" eats one start and turns itself off.
+    Once it's been 3 days since Suckist last finished a clean (the robot's own record, so manual runs reset it),
+    starts it the next time the house is empty (zone.home 0 for 5 minutes), between 9:00 and 20:00, any day. Checks
+    when we leave and every 15 minutes, so it also catches becoming due while we're already out. Never while it's
+    off the dock and never twice in a day. Switch: input_boolean.suckist_auto.
   triggers:
-  - trigger: state
-    entity_id: schedule.suckist_cleaning_windows
-    to: "on"
-    id: window
   - trigger: numeric_state
     entity_id: zone.home
     below: 1
     for: 00:05:00
-    id: left
+  - trigger: time_pattern
+    minutes: /15
   conditions:
   - condition: state
     entity_id: input_boolean.suckist_auto
     state: "on"
   - condition: state
+    entity_id: zone.home
+    state: "0"
+    for: 00:05:00
+  - condition: time
+    after: "09:00:00"
+    before: "20:00:00"
+  - condition: state
     entity_id: vacuum.suckist
     state: docked
   - condition: template
     value_template: >-
+      {% set ended = as_datetime(states('sensor.suckist_last_clean_end')) %}
       {% set began = as_datetime(states('sensor.suckist_last_clean_begin')) %}
-      {{ is_state('input_boolean.suckist_once_a_day', 'off') or began is none
-         or as_local(began).date() != now().date() }}
+      {{ ended is not none and now() - ended >= timedelta(days=3)
+         and (began is none or as_local(began).date() != now().date()) }}
   actions:
   - variables:
-      away: "{{ states('zone.home') | int(1) == 0 }}"
-      in_window: "{{ is_state('schedule.suckist_cleaning_windows', 'on') }}"
-      only_away: "{{ is_state('input_boolean.suckist_only_when_away', 'on') }}"
-      days: "{{ states('sensor.suckist_days_since_clean') | float(0) }}"
-      due: >-
-        {{ is_state('input_boolean.suckist_when_we_leave', 'on')
-           and days >= states('input_number.suckist_due_days') | float(2) }}
-      reason: >-
-        {% if trigger.id == 'window' and (not only_away or away) %}Scheduled
-        {% elif trigger.id == 'left' and in_window and only_away %}Scheduled, once you'd both left
-        {% elif trigger.id == 'left' and due %}You both left and it had been {{ days }} days
-        {% endif %}
-  - condition: template
-    value_template: "{{ reason | trim != '' }}"
-  - if:
-    - condition: state
-      entity_id: input_boolean.suckist_skip_next
-      state: "on"
-    then:
-    - action: input_boolean.turn_off
-      target:
-        entity_id: input_boolean.suckist_skip_next
-    - action: input_text.set_value
-      target:
-        entity_id: input_text.suckist_last_auto
-      data:
-        value: "Skipped ({{ reason | trim | lower }}) · {{ now().strftime('%a %-d %b %H:%M') }}"
-    - stop: Skipped once, as asked
-  - variables:
-      mode: >-
-        {{ {'Vacuum': 'vacuum', 'Vacuum and mop': 'vac_and_mop', 'Mop': 'mop'}
-           .get(states('input_select.suckist_auto_mode'), '') }}
-  - if:
-    - condition: template
-      value_template: "{{ mode != '' }}"
-    then:
-    - action: select.select_option
-      target:
-        entity_id: select.suckist_cleaning_mode
-      data:
-        option: "{{ mode }}"
+      message: "Cleaning now: it's been {{ states('sensor.suckist_days_since_clean') | float(3) | round(0) | int }} days."
   - action: vacuum.start
     target:
       entity_id: vacuum.suckist
-  - action: input_text.set_value
-    target:
-      entity_id: input_text.suckist_last_auto
-    data:
-      value: "{{ reason | trim }} · {{ now().strftime('%a %-d %b %H:%M') }}"
-  - if:
-    - condition: state
-      entity_id: input_boolean.suckist_notify
-      state: "on"
-    then:
-    - action: notify.mobile_app_schlixel
-      data:
-        title: Suckist
-        message: "Cleaning now: {{ reason | trim | lower }}."
-    - action: notify.send_message
-      target:
-        entity_id: notify.alyssas_iphone
-      data:
-        title: Suckist
-        message: "Cleaning now: {{ reason | trim | lower }}."
-  mode: single
-- id: suckist_home_again
-  alias: Suckist home again
-  description: >-
-    With "Dock when someone gets home" on, sends Suckist back to its dock when the empty house gets someone back
-    while it's cleaning (any run, not just automatic ones). It doesn't resume; start it again from the Vacuum page.
-  triggers:
-  - trigger: numeric_state
-    entity_id: zone.home
-    above: 0
-  conditions:
-  - condition: state
-    entity_id: input_boolean.suckist_dock_when_home
-    state: "on"
-  - condition: state
-    entity_id: vacuum.suckist
-    state: cleaning
-  actions:
-  - action: vacuum.return_to_base
-    target:
-      entity_id: vacuum.suckist
-  - if:
-    - condition: state
-      entity_id: input_boolean.suckist_notify
-      state: "on"
-    then:
-    - action: notify.mobile_app_schlixel
-      data:
-        title: Suckist
-        message: Someone's home, so it's heading back to the dock.
-    - action: notify.send_message
-      target:
-        entity_id: notify.alyssas_iphone
-      data:
-        title: Suckist
-        message: Someone's home, so it's heading back to the dock.
-  mode: single
-- id: suckist_finished
-  alias: Suckist finished
-  description: >-
-    With "Tell us when it runs" on, reports each finished clean (the robot's last-clean end time changing),
-    manual or automatic.
-  triggers:
-  - trigger: state
-    entity_id: sensor.suckist_last_clean_end
-    not_from: [unknown, unavailable]
-    not_to: [unknown, unavailable]
-  conditions:
-  - condition: state
-    entity_id: input_boolean.suckist_notify
-    state: "on"
-  actions:
-  # The area and time sensors catch up a moment after the end time.
-  - delay: 00:01:00
-  - variables:
-      message: >-
-        Done: {{ states('sensor.suckist_cleaning_area') | float(0) | round(0) | int }} m² in
-        {{ states('sensor.suckist_cleaning_time') | float(0) | round(0) | int }} min.
   - action: notify.mobile_app_schlixel
     data:
       title: Suckist
-      message: "{{ message | trim }}"
+      message: "{{ message }}"
   - action: notify.send_message
     target:
       entity_id: notify.alyssas_iphone
     data:
       title: Suckist
-      message: "{{ message | trim }}"
-  mode: queued
+      message: "{{ message }}"
+  mode: single
