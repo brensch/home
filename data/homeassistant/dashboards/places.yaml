@@ -1,82 +1,40 @@
-# Places: how often we go to the gym, Brendan's work and Alyssa's parents, from the Places sensors in
-# configuration.yaml (visit counters and this-week history_stats). Charts come from long-term statistics, which
-# are kept forever, so they grow from 2026-10-18 on. Every raw position is kept too, in
-# /config/location_log/locations.csv (automation location_log).
+# Places: where each of us has been, for whatever range the date picker at the bottom shows (www/presence-card.js).
+# The pies and timelines read the "<Name> at <Place>" sensors' long-term statistics (configuration.yaml), the map
+# every raw position of the phones' GPS trackers and the car; history is kept for 10 years (recorder).
 views:
 - title: Places
   path: places
   icon: mdi:map-marker-radius
   type: sections
-  max_columns: 3
+  max_columns: 2
+  footer:
+    card:
+      type: energy-date-selection
+      opening_direction: right
+      vertical_opening_direction: up
   sections:
   - type: grid
+    column_span: 2
     cards:
-    - type: heading
-      heading: Gym
-      icon: mdi:dumbbell
-    - type: tile
-      entity: sensor.brendan_at_the_gym_this_week
-      name: Brendan this week
-    - type: tile
-      entity: sensor.alyssa_at_the_gym_this_week
-      name: Alyssa this week
-    - type: statistics-graph
-      title: Visits per week
+    - type: custom:presence-card
+      title: Brendan
+      places:
+      - {name: Home, entity: sensor.brendan_at_home, color: '#3ca951'}
+      - {name: Work, entity: sensor.brendan_at_brendan_s_work, color: '#4269d0'}
+      - {name: Gym, entity: sensor.brendan_at_gym, color: '#efb118'}
+      - {name: Alyssa's parents, entity: sensor.brendan_at_alyssa_s_parents, color: '#ff8ab7'}
+      - {name: Away, entity: sensor.brendan_at_away, color: '#9e9e9e'}
+    - type: custom:presence-card
+      title: Alyssa
+      places:
+      - {name: Home, entity: sensor.alyssa_at_home, color: '#3ca951'}
+      - {name: Gym, entity: sensor.alyssa_at_gym, color: '#efb118'}
+      - {name: Her parents, entity: sensor.alyssa_at_alyssa_s_parents, color: '#ff8ab7'}
+      - {name: Away, entity: sensor.alyssa_at_away, color: '#9e9e9e'}
+    - type: custom:presence-map-card
+      title: Every point
       entities:
-      - entity: sensor.brendan_gym_visits
-        name: Brendan
-      - entity: sensor.alyssa_gym_visits
-        name: Alyssa
-      stat_types: [change]
-      period: week
-      days_to_show: 182
-      chart_type: bar
-      grid_options: {columns: full}
-    - type: statistics-graph
-      title: Hours per week
-      entities:
-      - entity: sensor.brendan_at_the_gym_this_week
-        name: Brendan
-      - entity: sensor.alyssa_at_the_gym_this_week
-        name: Alyssa
-      stat_types: [max]
-      period: week
-      days_to_show: 182
-      chart_type: bar
-      grid_options: {columns: full}
-  - type: grid
-    cards:
-    - type: heading
-      heading: Brendan's work
-      icon: mdi:briefcase
-    - type: tile
-      entity: sensor.brendan_at_work_this_week
-      name: This week
-    - type: statistics-graph
-      title: Hours per week
-      entities:
-      - entity: sensor.brendan_at_work_this_week
-        name: Hours
-      stat_types: [max]
-      period: week
-      days_to_show: 182
-      chart_type: bar
-      grid_options: {columns: full}
-  - type: grid
-    cards:
-    - type: heading
-      heading: Alyssa's parents
-      icon: mdi:home-heart
-    - type: tile
-      entity: sensor.alyssa_s_parents_visits
-      name: Visits so far
-    - type: statistics-graph
-      title: Visits per month
-      entities:
-      - entity: sensor.alyssa_s_parents_visits
-        name: Visits
-      stat_types: [change]
-      period: month
-      days_to_show: 365
-      chart_type: bar
-      grid_options: {columns: full}
+      - {entity: device_tracker.brend_phone, name: Brendan, color: '#4269d0'}
+      - {entity: device_tracker.alyssas_iphone, name: Alyssa, color: '#ff725c'}
+      - {entity: device_tracker.schlesla_location, name: Schlesla, color: '#6cc5b0'}
+      zones: [zone.home, zone.work, zone.gym, zone.alyssa_s_parents]

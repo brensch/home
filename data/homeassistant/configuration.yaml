@@ -15,14 +15,15 @@ scene: !include scenes.yaml
 # SSD writes. The real fix is on-device averaging (see data/esphome/*.yaml);
 # this block is the second line of defence.
 #   - commit_interval batches writes instead of fsyncing every second.
-#   - auto_purge/purge_keep_days are the defaults, stated explicitly so the
-#     retention window is visible rather than implied.
 # Exclude only what's copied at a slower rate: excluding an entity also stops
 # its long-term statistics (the *_energy / *_energy_cost sensors feed the
 # Energy dashboard's, so never exclude those).
 recorder:
   auto_purge: true
-  purge_keep_days: 10
+  # Everything is kept (10 years), since the 2026-10-18 audit cut the noise: ~2-2.5 GB a year at that day's rate.
+  # Watch for a new chatty entity (the audit found UniFi and the plant photos at ~70% of rows). Local HA backups
+  # are kept at 3 copies (each holds the whole database; the server's disk is the limit, Drive has 5 TB).
+  purge_keep_days: 3650
   commit_interval: 30
   # 2026-10-18 audit. Images have no use for history, and the plant photos (MQTT, from ~/plants) are re-published
   # every 30 s: ~11k rows a day for five pictures. The router's temperature and CPU arrive every few seconds
@@ -46,10 +47,6 @@ homeassistant:
   unit_system: metric
   external_url: https://hass.brensch.com
   internal_url: http://192.168.1.8:8123
-  # The File integration's notify.location_log appends to /config/location_log/locations.csv (automation
-  # location_log); HA only writes files in allow-listed folders.
-  allowlist_external_dirs:
-    - /config/location_log
 
 # Combined room light groups: Hue room + Nanoleaf/WLED, so one tile
 # controls every light in the room (not just the Hue bulbs). Defined in
@@ -89,7 +86,7 @@ shell_command:
 
 # Dashboards defined as YAML in git (dashboards/), one job each:
 #   Home = daily command center (default);
-#   Places = visits and time at the gym, work and Alyssa's parents (kept forever);
+#   Places = where each of us has been: a pie and a timeline per person, kept forever;
 #   Garage = the Tesla: controls, where it is, home charging and battery;
 #   Energy = our copy of the built-in Energy dashboard (that one can't take new
 #   cards) with one kWh + cost chart (www/energy-cost-card.js); the built-in
@@ -106,6 +103,8 @@ lovelace:
     - url: /local/plants-strategy.js?v=23
       type: module
     - url: /local/energy-cost-card.js?v=8
+      type: module
+    - url: /local/presence-card.js?v=2
       type: module
   dashboards:
     plants-dash:
@@ -202,32 +201,6 @@ input_select:
 # kWh the car has drawn charging at home, for the Garage page (not an Energy dashboard device: the car belongs on
 # Garage; on Energy its charging stays inside Untracked).
 sensor:
-  # Hours in a place so far this week (Monday 00:00 on). The recorder keeps 10 days, enough for a week; each
-  # week's value is kept forever in long-term statistics (the Places page's charts).
-  - platform: history_stats
-    name: Brendan at work this week
-    unique_id: brendan_work_hours_week
-    entity_id: person.brend
-    state: "Brendan's work"
-    type: time
-    start: "{{ (now() - timedelta(days=now().weekday())).replace(hour=0, minute=0, second=0, microsecond=0) }}"
-    end: "{{ now() }}"
-  - platform: history_stats
-    name: Brendan at the gym this week
-    unique_id: brendan_gym_hours_week
-    entity_id: person.brend
-    state: "Gym"
-    type: time
-    start: "{{ (now() - timedelta(days=now().weekday())).replace(hour=0, minute=0, second=0, microsecond=0) }}"
-    end: "{{ now() }}"
-  - platform: history_stats
-    name: Alyssa at the gym this week
-    unique_id: alyssa_gym_hours_week
-    entity_id: person.alyssa
-    state: "Gym"
-    type: time
-    start: "{{ (now() - timedelta(days=now().weekday())).replace(hour=0, minute=0, second=0, microsecond=0) }}"
-    end: "{{ now() }}"
   - platform: integration
     name: Schlesla home charging energy
     unique_id: schlesla_home_charging_energy
@@ -418,60 +391,73 @@ template:
         icon: mdi:cpu-64-bit
         availability: "{{ has_value('sensor.schrouter_cpu_utilization') }}"
         state: "{{ states('sensor.schrouter_cpu_utilization') }}"
-  # Visits, counted forever: one per arrival that lasts (gym 10 minutes, Alyssa's parents 15 minutes, counted
-  # once however many of us go). total_increasing, so the Places page charts visits per week or month from
-  # long-term statistics. They keep their count over restarts.
-  - triggers:
-      - trigger: state
-        entity_id: person.brend
-        to: Gym
-        for: 00:10:00
-      - trigger: homeassistant
-        event: start
-      - trigger: event
-        event_type: event_template_reloaded
-    sensor:
-      - name: Brendan gym visits
-        unique_id: brendan_gym_visits
-        icon: mdi:counter
-        unit_of_measurement: visits
-        state_class: total_increasing
-        # The start/reload triggers only turn "unknown" into 0 (they never count).
-        state: "{{ this.state | int(0) + (1 if trigger.platform in ['state', 'numeric_state'] else 0) }}"
-  - triggers:
-      - trigger: state
-        entity_id: person.alyssa
-        to: Gym
-        for: 00:10:00
-      - trigger: homeassistant
-        event: start
-      - trigger: event
-        event_type: event_template_reloaded
-    sensor:
-      - name: Alyssa gym visits
-        unique_id: alyssa_gym_visits
-        icon: mdi:counter
-        unit_of_measurement: visits
-        state_class: total_increasing
-        # The start/reload triggers only turn "unknown" into 0 (they never count).
-        state: "{{ this.state | int(0) + (1 if trigger.platform in ['state', 'numeric_state'] else 0) }}"
-  - triggers:
-      - trigger: numeric_state
-        entity_id: zone.alyssa_s_parents
-        above: 0
-        for: 00:15:00
-      - trigger: homeassistant
-        event: start
-      - trigger: event
-        event_type: event_template_reloaded
-    sensor:
-      - name: Alyssa's parents visits
-        unique_id: parents_visits
-        icon: mdi:counter
-        unit_of_measurement: visits
-        state_class: total_increasing
-        # The start/reload triggers only turn "unknown" into 0 (they never count).
-        state: "{{ this.state | int(0) + (1 if trigger.platform in ['state', 'numeric_state'] else 0) }}"
+  # Where each of us is, as numbers so it's kept forever: 100 while in that place, else 0. Long-term statistics keep
+  # each hour's average (= % of the hour there) indefinitely; the Places page's pie and timeline
+  # (www/presence-card.js) read those. Away = in none of the zones. Backfilled 2026-10-18 from the 10 days of history.
+  - sensor:
+      - name: Brendan at Home
+        unique_id: presence_brendan_home
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:map-marker
+        availability: "{{ has_value('person.brend') }}"
+        state: "{{ 100 if (is_state('person.brend', 'home')) else 0 }}"
+      - name: Brendan at Brendan's work
+        unique_id: presence_brendan_work
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:map-marker
+        availability: "{{ has_value('person.brend') }}"
+        state: "{{ 100 if (is_state('person.brend', state_attr('zone.work', 'friendly_name'))) else 0 }}"
+      - name: Brendan at Gym
+        unique_id: presence_brendan_gym
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:map-marker
+        availability: "{{ has_value('person.brend') }}"
+        state: "{{ 100 if (is_state('person.brend', state_attr('zone.gym', 'friendly_name'))) else 0 }}"
+      - name: Brendan at Alyssa's parents
+        unique_id: presence_brendan_parents
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:map-marker
+        availability: "{{ has_value('person.brend') }}"
+        state: "{{ 100 if (is_state('person.brend', state_attr('zone.alyssa_s_parents', 'friendly_name'))) else 0 }}"
+      - name: Brendan at Away
+        unique_id: presence_brendan_away
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:map-marker
+        availability: "{{ has_value('person.brend') }}"
+        state: "{{ 100 if (is_state('person.brend', 'not_home')) else 0 }}"
+      - name: Alyssa at Home
+        unique_id: presence_alyssa_home
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:map-marker
+        availability: "{{ has_value('person.alyssa') }}"
+        state: "{{ 100 if (is_state('person.alyssa', 'home')) else 0 }}"
+      - name: Alyssa at Gym
+        unique_id: presence_alyssa_gym
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:map-marker
+        availability: "{{ has_value('person.alyssa') }}"
+        state: "{{ 100 if (is_state('person.alyssa', state_attr('zone.gym', 'friendly_name'))) else 0 }}"
+      - name: Alyssa at Alyssa's parents
+        unique_id: presence_alyssa_parents
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:map-marker
+        availability: "{{ has_value('person.alyssa') }}"
+        state: "{{ 100 if (is_state('person.alyssa', state_attr('zone.alyssa_s_parents', 'friendly_name'))) else 0 }}"
+      - name: Alyssa at Away
+        unique_id: presence_alyssa_away
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:map-marker
+        availability: "{{ has_value('person.alyssa') }}"
+        state: "{{ 100 if (is_state('person.alyssa', 'not_home')) else 0 }}"
   # Free space as a percentage, for the Health page and the disk alert (System Monitor reports usage % and free GiB).
   - sensor:
       - name: Server disk free percent
