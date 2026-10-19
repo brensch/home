@@ -310,20 +310,39 @@ views:
         name: Brendan
       - entity: person.alyssa
         name: Alyssa
+    # One value per clean (sensor.suckist_clean_* are only available for an hour after each; see configuration.yaml),
+    # so each bar is a clean, not the last value carried forward. Two cleans in a day show the bigger one.
     - type: statistics-graph
-      title: Cleans per day
+      title: Minutes per clean
       entities:
-      - entity: sensor.suckist_total_cleaning_count
-        name: Cleans
-      stat_types: [change]
+      - entity: sensor.suckist_clean_minutes
+        name: Minutes
+      stat_types: [max]
       period: day
       days_to_show: 30
       chart_type: bar
       grid_options: {columns: 6}
-    - type: history-graph
-      title: Each clean · m²
-      hours_to_show: 240
-      grid_options: {columns: 6}
+    - type: statistics-graph
+      title: Area per clean · m²
       entities:
-      - entity: sensor.suckist_cleaning_area
+      - entity: sensor.suckist_clean_area
         name: Area
+      stat_types: [max]
+      period: day
+      days_to_show: 30
+      chart_type: bar
+      grid_options: {columns: 6}
+    - type: markdown
+      title: Recent cleans
+      grid_options: {columns: full}
+      content: |
+        {%- set cleans = state_attr('sensor.suckist_cleans', 'cleans') or [] %}
+        {%- if cleans %}
+        | Finished | Took | Area | Started by |
+        |:--|--:|--:|:--|
+        {%- for c in cleans[:10] %}
+        | {{ as_local(as_datetime(c.end)).strftime('%a %-d %b, %-I:%M %p') }} | {{ c.minutes }} min | {{ c.area }} m² | {{ 'Auto-clean' if c.auto else 'By hand' }} |
+        {%- endfor %}
+        {%- else %}
+        No cleans recorded yet.
+        {%- endif %}
