@@ -148,6 +148,7 @@ class PresenceMapCard extends CollectionCard {
       map.style.height = this.config.height || '480px';
       body.appendChild(map);
       this._elements = [map];
+      this._addFullscreen();
     }
     const map = this._elements[0];
     map.hass = this._hass;
@@ -196,6 +197,39 @@ class PresenceTimelineCard extends CollectionCard {
     chart.historyData = {line: [], timeline};
   }
 }
+
+// A button in the map card's title row that makes the card cover the whole window (the button again or Esc to
+// leave). An overlay rather than the browser's element fullscreen, which iPhone Safari doesn't offer.
+PresenceMapCard.prototype._addFullscreen = function () {
+  const card = this.shadowRoot.querySelector('ha-card');
+  const title = this.shadowRoot.querySelector('.title');
+  const style = document.createElement('style');
+  style.textContent = `
+    .title { display: flex; align-items: center; justify-content: space-between; }
+    .fs { background: none; border: none; color: var(--secondary-text-color); cursor: pointer; padding: 4px;
+          border-radius: 50%; display: flex; }
+    .fs:hover { background: var(--secondary-background-color); }
+    ha-card.full { position: fixed; inset: 0; z-index: 10; border-radius: 0; display: flex; flex-direction: column;
+                   height: 100vh; height: 100dvh; }
+    ha-card.full .body { flex: 1; min-height: 0; }
+    ha-card.full ha-map { height: 100% !important; }`;
+  this.shadowRoot.appendChild(style);
+  const button = document.createElement('button');
+  button.className = 'fs';
+  const label = document.createElement('span');
+  label.textContent = title.textContent;
+  title.replaceChildren(label, button);
+  const set = full => {
+    card.classList.toggle('full', full);
+    button.innerHTML = `<ha-icon icon="${full ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"></ha-icon>`;
+    button.title = full ? 'Exit full screen' : 'Full screen';
+    // No window resize event here: that makes HA re-lay-out the page and recreate this card (losing the state).
+    // The map follows its container's size by itself.
+  };
+  set(false);
+  button.addEventListener('click', () => set(!card.classList.contains('full')));
+  window.addEventListener('keydown', e => { if (e.key === 'Escape' && card.classList.contains('full')) set(false); });
+};
 
 customElements.define('presence-card', PresenceCard);
 customElements.define('presence-map-card', PresenceMapCard);
