@@ -310,8 +310,8 @@ views:
         name: Brendan
       - entity: person.alyssa
         name: Alyssa
-    # One value per clean (sensor.suckist_clean_* are only available for an hour after each; see configuration.yaml),
-    # so each bar is a clean, not the last value carried forward. Two cleans in a day show the bigger one.
+    # One bar per clean day (sensor.suckist_clean_* read the clean's value for an hour after it, 0 otherwise; see
+    # configuration.yaml). Two cleans in a day show the bigger one.
     - type: statistics-graph
       title: Minutes per clean
       entities:

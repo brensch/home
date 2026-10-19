@@ -231,8 +231,8 @@ template:
         availability: "{{ as_datetime(states('sensor.suckist_last_clean_end')) is not none }}"
         state: "{{ ((now() - as_datetime(states('sensor.suckist_last_clean_end'))).total_seconds() / 86400) | round(1) }}"
   # Suckist's cleans one by one, from the robot's figures for its last clean (they settle a minute after it ends).
-  # Only available for an hour after each clean, so their daily statistics (the Vacuum page's bar charts) are one
-  # value per clean day, not the last value carried forward.
+  # They read the clean's value for an hour after it and 0 otherwise, so their daily max (the Vacuum page's bar
+  # charts) is one bar per clean day, and every other day has a 0 that keeps the chart's days evenly spaced.
   - triggers:
       - trigger: state
         entity_id: sensor.suckist_last_clean_end
@@ -258,15 +258,13 @@ template:
         icon: mdi:timer-outline
         unit_of_measurement: min
         state_class: measurement
-        availability: "{{ fresh }}"
-        state: "{{ entry.minutes }}"
+        state: "{{ entry.minutes if fresh else 0 }}"
       - name: Suckist clean area
         unique_id: suckist_clean_area
         icon: mdi:texture-box
         unit_of_measurement: m²
         state_class: measurement
-        availability: "{{ fresh }}"
-        state: "{{ entry.area }}"
+        state: "{{ entry.area if fresh else 0 }}"
   # Free space as a percentage, for the Health page and the disk alert (System Monitor reports usage % and free GiB).
   - sensor:
       - name: Server disk free percent
