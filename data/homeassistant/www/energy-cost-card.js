@@ -78,15 +78,16 @@ class EnergyCostCard extends HTMLElement {
 
     const style = getComputedStyle(this);
     const color = i => style.getPropertyValue(`--graph-color-${i + 1}`).trim() || PALETTE[i % PALETTE.length];
-    const bar = (name, values, i) => ({
-      type: 'bar', name, stack: 'kwh', yAxisIndex: 0, barMaxWidth: 40, itemStyle: {color: color(i)},
+    const bar = (name, values, c) => ({
+      type: 'bar', name, stack: 'kwh', yAxisIndex: 0, barMaxWidth: 40, itemStyle: {color: c},
       data: times.map(t => [t, values(t)]),
     });
     const series = [
-      ...devices.map((d, i) => bar(d.name, t => d.values.get(t) ?? 0, i)),
+      ...devices.map((d, i) => bar(d.name, t => d.values.get(t) ?? 0, color(i))),
       // The meter is about a day behind the plugs: no meter reading means no untracked, not negative.
       bar('Untracked', t => meter.has(t)
-        ? Math.max(0, meter.get(t) - devices.reduce((sum, d) => sum + (d.values.get(t) ?? 0), 0)) : 0, devices.length),
+        ? Math.max(0, meter.get(t) - devices.reduce((sum, d) => sum + (d.values.get(t) ?? 0), 0)) : 0,
+        style.getPropertyValue('--disabled-color').trim() || '#9e9e9e'),
       {
         type: 'line', name: 'Cost', yAxisIndex: 1, step: false, symbol: 'circle', symbolSize: 5,
         lineStyle: {width: 2}, itemStyle: {color: style.getPropertyValue('--primary-text-color').trim() || '#222'},
@@ -114,7 +115,11 @@ class EnergyCostCard extends HTMLElement {
           const rows = items.filter(i => i.value[1] > 0 || i.seriesName === 'Cost').map(i =>
             `${i.marker} ${i.seriesName}: ${i.seriesName === 'Cost' ? `$${fmt(i.value[1], 2)}` : `${fmt(i.value[1], 2)} kWh`}`);
           const kwh = items.filter(i => i.seriesName !== 'Cost').reduce((s, i) => s + i.value[1], 0);
-          return [`<b>${when(items[0].value[0])}</b>`, ...rows, `Total: ${fmt(kwh, 2)} kWh`].join('<br>');
+          // ha-chart-base renders what the formatter returns with lit, so a string would show as text (tags and
+          // all); a DOM node is rendered as is.
+          const el = document.createElement('div');
+          el.innerHTML = [`<b>${when(items[0].value[0])}</b>`, ...rows, `<b>Total: ${fmt(kwh, 2)} kWh</b>`].join('<br>');
+          return el;
         },
       },
     };
