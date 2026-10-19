@@ -29,12 +29,18 @@ recorder:
   # every 30 s: ~11k rows a day for five pictures. The router's temperature and CPU arrive every few seconds
   # (~50k rows a day); their once-a-minute copies (sensor.router_temperature / router_cpu) are what's recorded.
   # Router traffic, memory, latency and per-device bandwidth aren't in HA at all: UniFi's own app has them.
+  # 2026-10-19: images (all of them: their picture token changes every 5 minutes, so even an unavailable one adds
+  # a row each time; the 14 Steam Online game pictures alone were ~4k rows a day) and the TV's own entities (they
+  # drop out ~200-400 times a day in standby; sensor.tv records its on/off without the blips).
   exclude:
     entity_globs:
-      - image.plant_*
+      - image.*
     entities:
       - sensor.schrouter_cpu_temperature
       - sensor.schrouter_cpu_utilization
+      - media_player.tv
+      - media_player.tv_cast
+      - remote.tv
 
 # Disable TTS to prevent Google Cloud errors
 tts:
