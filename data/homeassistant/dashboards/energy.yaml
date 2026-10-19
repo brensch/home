@@ -1,8 +1,8 @@
 # Energy: our copy of HA's built-in Energy dashboard (which can only hide its own cards, not take new ones), with
 # the cards we use plus a daily cost chart. The energy-* cards read the sources and devices from Settings →
 # Dashboards → Energy and, like the cost chart, follow the date picker in the footer. PG&E (opower) data arrives
-# about a day late, so today has plugs but no meter yet; no distribution card for that reason (it only ever
-# showed today-ish totals, with the grid missing).
+# about a day late, so today has plugs but no meter yet. No distribution card: on the default range (today) it
+# showed the plugs with no grid, and with no solar or battery it adds nothing to the chart above.
 views:
 - title: Energy
   path: energy
