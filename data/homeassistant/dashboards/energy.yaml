@@ -1,7 +1,8 @@
 # Energy: our copy of HA's built-in Energy dashboard (which can only hide its own cards, not take new ones), with
 # the cards we use plus a daily cost chart. The energy-* cards read the sources and devices from Settings →
-# Dashboards → Energy and all follow the date picker in the footer; the cost chart is plain statistics, so it
-# has its own fixed range. PG&E (opower) data arrives about a day late.
+# Dashboards → Energy and, like the cost chart, follow the date picker in the footer. PG&E (opower) data arrives
+# about a day late, so today has plugs but no meter yet; no distribution card for that reason (it only ever
+# showed today-ish totals, with the grid missing).
 views:
 - title: Energy
   path: energy
@@ -27,14 +28,10 @@ views:
       - entity: opower:pge_elec_3015750579_energy_cost
         name: Cost
       stat_types: [change]
-      period: day
-      days_to_show: 30
+      # Follows the footer's date picker like the energy cards, hourly/daily/monthly bars to match.
+      energy_date_selection: true
+      period: auto
       chart_type: bar
-      grid_options: {columns: full}
-  - type: grid
-    cards:
-    - type: energy-distribution
-      title: Energy distribution
       grid_options: {columns: full}
   - type: grid
     cards:
