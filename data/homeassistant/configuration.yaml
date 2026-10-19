@@ -171,6 +171,18 @@ input_select:
     icon: mdi:vector-polyline
     options: [Fast, Standard, Deep, Deep+]
 
+# kWh the car has drawn charging at home: an Energy dashboard device (Settings → Dashboards → Energy), so its
+# charging shows as its own bar instead of inside Untracked.
+sensor:
+  - platform: integration
+    name: Schlesla home charging energy
+    unique_id: schlesla_home_charging_energy
+    source: sensor.schlesla_home_charging_power
+    method: left
+    round: 3
+    max_sub_interval:
+      minutes: 15
+
 # Internet reachability is separate from the router's controller connection.
 binary_sensor:
   - platform: rest
@@ -302,6 +314,20 @@ template:
         # Only re-rendered by the triggers above, so a drop shows here only once it has lasted a minute.
         availability: "{{ not is_state('media_player.tv', 'unavailable') }}"
         state: "{{ 'On' if is_state('media_player.tv', 'on') else 'Off' }}"
+  # The Tesla (Schlesla, Tesla Fleet integration) charging at home, for the Energy page: its charger power while
+  # it's parked at home, else 0. Integrated into sensor.schlesla_home_charging_energy below. The car is read every
+  # 10 minutes, so this is a step per reading.
+  - sensor:
+      - name: Schlesla home charging power
+        unique_id: schlesla_home_charging_power
+        unit_of_measurement: kW
+        device_class: power
+        state_class: measurement
+        icon: mdi:ev-station
+        availability: "{{ has_value('sensor.schlesla_charger_power') }}"
+        state: >-
+          {{ states('sensor.schlesla_charger_power') | float(0)
+             if is_state('device_tracker.schlesla_location', 'home') else 0 }}
   # Free space as a percentage, for the Health page and the disk alert (System Monitor reports usage % and free GiB).
   - sensor:
       - name: Server disk free percent

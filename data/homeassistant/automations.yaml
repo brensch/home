@@ -799,3 +799,95 @@
         Left work{{ (', home in about ' ~ (minutes | trim) ~ ' min' ~ ('' if traffic else ' (no traffic info)'))
         if (minutes | trim | int(0)) else '' }}.
   mode: single
+- id: schlesla_plug_in
+  alias: Schlesla plug-in reminder
+  description: >-
+    At 9 pm, if the Tesla is parked at home under 50% and not plugged in, tells Brendan. Readings can be up to 10
+    minutes old (the car is polled every 10 minutes and not woken).
+  triggers:
+  - trigger: time
+    at: "21:00:00"
+  conditions:
+  - condition: state
+    entity_id: device_tracker.schlesla_location
+    state: home
+  - condition: numeric_state
+    entity_id: sensor.schlesla_battery_level
+    below: 50
+  - condition: state
+    entity_id: binary_sensor.schlesla_charge_cable
+    state: "off"
+  actions:
+  - action: notify.mobile_app_schlixel
+    data:
+      title: Plug in the car
+      message: >-
+        Schlesla is at {{ states('sensor.schlesla_battery_level') }}%
+        ({{ states('sensor.schlesla_battery_range') | float(0) | round(0) | int }} km) and isn't plugged in.
+  mode: single
+- id: schlesla_left_open
+  alias: Schlesla left open
+  description: >-
+    At 10:30 pm, if the Tesla is at home and unlocked, or a door, window, frunk or trunk is open, tells Brendan with
+    buttons to lock it and close the windows (handled by schlesla_left_open_action).
+  triggers:
+  - trigger: time
+    at: "22:30:00"
+  conditions:
+  - condition: state
+    entity_id: device_tracker.schlesla_location
+    state: home
+  - condition: template
+    value_template: "{{ problems | count > 0 }}"
+  variables:
+    problems: >-
+      {% set p = [] %}
+      {% if is_state('lock.schlesla_lock', 'unlocked') %}{% set p = p + ['unlocked'] %}{% endif %}
+      {% set open_doors = ['binary_sensor.schlesla_front_driver_door', 'binary_sensor.schlesla_front_passenger_door',
+         'binary_sensor.schlesla_rear_driver_door', 'binary_sensor.schlesla_rear_passenger_door']
+         | select('is_state', 'on') | list %}
+      {% if open_doors %}{% set p = p + ['a door open'] %}{% endif %}
+      {% if is_state('cover.schlesla_windows', 'open') %}{% set p = p + ['windows open'] %}{% endif %}
+      {% if is_state('cover.schlesla_frunk', 'open') %}{% set p = p + ['frunk open'] %}{% endif %}
+      {% if is_state('cover.schlesla_trunk', 'open') %}{% set p = p + ['trunk open'] %}{% endif %}
+      {{ p }}
+  actions:
+  - action: notify.mobile_app_schlixel
+    data:
+      title: Schlesla
+      message: "The car is {{ problems | join(', ') }}."
+      data:
+        tag: schlesla_left_open
+        actions:
+        - action: SCHLESLA_LOCK
+          title: Lock
+        - action: SCHLESLA_CLOSE_WINDOWS
+          title: Close windows
+  mode: single
+- id: schlesla_left_open_action
+  alias: Schlesla left open (buttons)
+  description: The Lock and Close windows buttons on schlesla_left_open's notification.
+  triggers:
+  - trigger: event
+    event_type: mobile_app_notification_action
+    event_data:
+      action: SCHLESLA_LOCK
+    id: lock
+  - trigger: event
+    event_type: mobile_app_notification_action
+    event_data:
+      action: SCHLESLA_CLOSE_WINDOWS
+    id: windows
+  actions:
+  - if:
+    - condition: trigger
+      id: lock
+    then:
+    - action: lock.lock
+      target:
+        entity_id: lock.schlesla_lock
+    else:
+    - action: cover.close_cover
+      target:
+        entity_id: cover.schlesla_windows
+  mode: queued
