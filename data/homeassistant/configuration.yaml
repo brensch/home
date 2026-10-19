@@ -104,7 +104,7 @@ lovelace:
       type: module
     - url: /local/energy-cost-card.js?v=8
       type: module
-    - url: /local/presence-card.js?v=2
+    - url: /local/presence-card.js?v=3
       type: module
   dashboards:
     plants-dash:

@@ -1,5 +1,5 @@
 # Places: where each of us has been, for whatever range the date picker at the bottom shows (www/presence-card.js).
-# The pies and timelines read the "<Name> at <Place>" sensors' long-term statistics (configuration.yaml), the map
+# A 7-day history-graph timeline, then the donuts, which read the "<Name> at <Place>" sensors' long-term statistics (configuration.yaml), the map
 # every raw position of the phones' GPS trackers and the car; history is kept for 10 years (recorder).
 views:
 - title: Places
@@ -13,8 +13,20 @@ views:
       opening_direction: right
       vertical_opening_direction: up
   sections:
+  # HA's own timeline: where each of us was, the last 7 days (it has a fixed range; the rest follows the date picker).
   - type: grid
     column_span: 2
+    cards:
+    - type: history-graph
+      title: Where we've been
+      hours_to_show: 168
+      grid_options: {columns: full}
+      entities:
+      - entity: person.brend
+        name: Brendan
+      - entity: person.alyssa
+        name: Alyssa
+  - type: grid
     cards:
     - type: custom:presence-card
       title: Brendan
@@ -24,6 +36,8 @@ views:
       - {name: Gym, entity: sensor.brendan_at_gym, color: '#efb118'}
       - {name: Alyssa's parents, entity: sensor.brendan_at_alyssa_s_parents, color: '#ff8ab7'}
       - {name: Away, entity: sensor.brendan_at_away, color: '#9e9e9e'}
+  - type: grid
+    cards:
     - type: custom:presence-card
       title: Alyssa
       places:
@@ -31,6 +45,9 @@ views:
       - {name: Gym, entity: sensor.alyssa_at_gym, color: '#efb118'}
       - {name: Her parents, entity: sensor.alyssa_at_alyssa_s_parents, color: '#ff8ab7'}
       - {name: Away, entity: sensor.alyssa_at_away, color: '#9e9e9e'}
+  - type: grid
+    column_span: 2
+    cards:
     - type: custom:presence-map-card
       title: Every point
       entities:
