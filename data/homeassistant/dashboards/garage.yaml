@@ -1,0 +1,117 @@
+# Garage: the Tesla, Schlesla (Tesla Fleet integration). Readings are up to 10 minutes old: the car is polled
+# every 10 minutes with a free "awake?" check and never woken just to read it; commands (lock, climate, sentry...)
+# wake it.
+views:
+- title: Garage
+  path: garage
+  icon: mdi:garage
+  type: sections
+  max_columns: 3
+  sections:
+  # The Tesla (Tesla Fleet integration). Readings are up to 10 minutes old: the car is polled every 10 minutes
+  # and never woken just to read it; commands wake it.
+  - type: grid
+    cards:
+      - type: heading
+        heading: Schlesla
+        icon: mdi:car-electric
+        badges:
+          - {type: entity, entity: sensor.schlesla_battery_level, show_state: true, show_icon: true}
+          - {type: entity, entity: sensor.schlesla_battery_range, show_state: true, show_icon: true}
+          - {type: entity, entity: device_tracker.schlesla_location, show_state: true, show_icon: true}
+      - type: tile
+        entity: lock.schlesla_lock
+        name: Lock
+        features_position: inline
+        features: [{type: lock-commands}]
+      - type: tile
+        entity: sensor.schlesla_charging
+        name: Charging
+        icon: mdi:ev-plug-type2
+      - type: tile
+        entity: climate.schlesla_climate
+        name: Climate
+        grid_options: {columns: full}
+        features_position: bottom
+        features:
+          - {type: climate-hvac-modes, hvac_modes: [heat_cool, "off"]}
+          - {type: target-temperature}
+      - type: tile
+        entity: number.schlesla_charge_limit
+        name: Charge limit
+        grid_options: {columns: full}
+        features_position: inline
+        features: [{type: numeric-input, style: slider}]
+      - type: tile
+        entity: switch.schlesla_charge
+        name: Charge now
+        features_position: inline
+        features: [{type: toggle}]
+        visibility:
+          - {condition: state, entity: binary_sensor.schlesla_charge_cable, state: "on"}
+      - type: tile
+        entity: cover.schlesla_frunk
+        name: Frunk
+        tap_action: {action: more-info}
+      - type: tile
+        entity: cover.schlesla_trunk
+        name: Trunk
+        tap_action: {action: more-info}
+      - type: tile
+        entity: cover.schlesla_windows
+        name: Windows open
+        icon: mdi:car-door
+        features_position: inline
+        features: [{type: cover-open-close}]
+        visibility:
+          - {condition: state, entity: cover.schlesla_windows, state: open}
+      - type: tile
+        entity: switch.schlesla_sentry_mode
+        name: Sentry
+        features_position: inline
+        features: [{type: toggle}]
+      - type: tile
+        entity: update.schlesla_update
+        name: Software update
+        visibility:
+          - {condition: state, entity: update.schlesla_update, state: "on"}
+  # Where it is and where it's been today (its location only updates while it's awake).
+  - type: grid
+    cards:
+      - type: heading
+        heading: Where
+        icon: mdi:map-marker
+      - type: map
+        entities: [device_tracker.schlesla_location]
+        hours_to_show: 24
+        grid_options: {columns: full, rows: 6}
+  # Home charging: sensor.schlesla_home_charging_energy (configuration.yaml), the car's charger power integrated
+  # while it's parked at home, so it's in 10-minute steps.
+  - type: grid
+    cards:
+      - type: heading
+        heading: Charging at home
+        icon: mdi:ev-station
+      - type: tile
+        entity: sensor.schlesla_home_charging_this_month
+        name: This month
+      - type: tile
+        entity: sensor.schlesla_home_charging_cost_this_month
+        name: Cost (off-peak rate)
+      - type: statistics-graph
+        title: kWh per day
+        entities:
+          - entity: sensor.schlesla_home_charging_energy
+            name: Charged
+        stat_types: [change]
+        period: day
+        days_to_show: 30
+        chart_type: bar
+        grid_options: {columns: full}
+      - type: history-graph
+        title: Battery · %
+        hours_to_show: 168
+        grid_options: {columns: full}
+        entities:
+          - entity: sensor.schlesla_battery_level
+            name: Battery
