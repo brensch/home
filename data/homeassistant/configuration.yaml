@@ -110,7 +110,7 @@ lovelace:
       type: module
     - url: /local/presence-card.js?v=9
       type: module
-    - url: /local/tv-card.js?v=2
+    - url: /local/tv-card.js?v=3
       type: module
   dashboards:
     plants-dash:

@@ -18,6 +18,7 @@ const APPS = {
   'com.wbd.stream': 'Max',
   'com.plexapp.android': 'Plex',
   'com.apple.atve.androidtv.appletv': 'Apple TV',
+  'com.stremio.one': 'Stremio',
   'com.spocky.projengmenu': 'Home screen',
   'com.android.systemui': 'System',
   'com.android.tv.settings': 'Settings',
@@ -206,14 +207,22 @@ class TvAppsCard extends TvCard {
   }
 }
 
+// "Episode 2", "S1 E3", "Season 1 Episode 3": an episode, so it's grouped under its show.
+const EPISODE = /^(episode\s*\d+|s\d+\s*:?\s*e\d+|season\s*\d+.*episode\s*\d+)/i;
+
 class TvTitlesCard extends TvCard {
   _render({plays}) {
     const by = new Map();
     for (const s of plays) {
-      const k = `${s.label}\u0000${s.channel}`;
-      const e = by.get(k) || {label: s.label, channel: s.channel, app: s.app, ms: 0, last: 0};
+      const episode = EPISODE.test(s.channel) ? s.channel : '';
+      const k = episode ? `${s.label}\u0000show` : `${s.label}\u0000${s.channel}`;
+      const e = by.get(k) || {label: s.label, channel: episode ? '' : s.channel, app: s.app, ms: 0, last: 0, episodes: new Set()};
       e.ms += s.end - s.start; e.last = Math.max(e.last, s.end);
+      if (episode) e.episodes.add(episode);
       by.set(k, e);
+    }
+    for (const e of by.values()) {
+      if (e.episodes.size) e.channel = [...e.episodes].join(', ');
     }
     const list = [...by.values()].filter(e => e.ms >= 60000).sort((a, b) => b.ms - a.ms).slice(0, this.config.max || 25);
     if (!list.length) { this._message('Nothing played in this range.'); return; }
