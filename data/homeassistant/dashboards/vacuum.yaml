@@ -1,7 +1,7 @@
 # Suckist, the Roborock Qrevo S (roborock.vacuum.a104) and its dock. Roborock integration (cloud login for setup,
 # then commands over the LAN to 192.168.20.10:58867; the robot lives on its own VLAN, see ~/CLAUDE.md).
-# Cleaning by room: name the rooms in the Roborock app, map them to HA areas in the vacuum's entity settings
-# ("Areas"), then vacuum.clean_area.
+# Sections flow across three columns: now / clean now / auto-clean, then map / dock / maintenance, then the graphs
+# full width. Rooms are Roborock segment ids (script.suckist_clean_rooms).
 views:
 - title: Vacuum
   path: vacuum
@@ -9,37 +9,25 @@ views:
   type: sections
   max_columns: 3
   sections:
-  # The robot's own last-clean time is the only state; automation suckist_auto_clean: after 2 days when we're out,
-  # after 4 at noon regardless.
-  - type: grid
-    cards:
-    - type: entity
-      entity: sensor.suckist_days_since_clean
-      name: Since last vacuumed
-      icon: mdi:timer-sand
-      grid_options: {columns: full}
+  # What it's doing and how long since it last cleaned (the robot's own last-clean end).
   - type: grid
     cards:
     - type: heading
       heading: Suckist
       icon: mdi:robot-vacuum
-    - type: markdown
+      badges:
+      - {type: entity, entity: sensor.suckist_battery, show_state: true, show_icon: true}
+      - type: entity
+        entity: sensor.suckist_current_room
+        show_state: true
+        show_icon: true
+        visibility:
+        - {condition: state, entity: vacuum.suckist, state: cleaning}
+    - type: entity
+      entity: sensor.suckist_days_since_clean
+      name: Since last vacuumed
+      icon: mdi:timer-sand
       grid_options: {columns: full}
-      content: >-
-        {% set ended = as_datetime(states('sensor.suckist_last_clean_end')) %}
-        {% if ended is not none %}
-        {% set away_from = ended + timedelta(days=2) %}
-        {% set force = as_local(ended + timedelta(days=4)) %}
-        {% set force = force.replace(hour=12, minute=0, second=0) if force.hour < 12
-           else (force + timedelta(days=1)).replace(hour=12, minute=0, second=0) %}
-        {% if is_state('vacuum.suckist', 'cleaning') %}**Cleaning now.**
-        {% elif is_state('input_boolean.suckist_auto', 'off') %}Auto-clean is off.
-        {% elif now() < away_from %}Cleans when you're both out from {{ as_local(away_from).strftime('%a %-I %p') }},
-        or {{ force.strftime('%a') }} at noon regardless.
-        {% else %}Cleans the next time you're both out, or {{ 'today' if force.date() == now().date()
-           else force.strftime('%a') }} at noon regardless.
-        {% endif %}
-        {% endif %}
     - type: tile
       entity: vacuum.suckist
       name: Suckist
@@ -48,23 +36,21 @@ views:
       features:
       - type: vacuum-commands
         commands: [start_pause, stop, return_home, locate]
-    - type: conditional
-      conditions:
-      - condition: state
-        entity: sensor.suckist_vacuum_error
-        state_not: none
-      card:
-        type: tile
-        entity: sensor.suckist_vacuum_error
-        name: Problem
-        icon: mdi:alert-circle-outline
     - type: tile
-      entity: input_boolean.suckist_auto
-      name: Auto-clean
+      entity: sensor.suckist_vacuum_error
+      name: Robot problem
+      icon: mdi:alert-circle-outline
       grid_options: {columns: full}
-      features_position: inline
-      features: [{type: toggle}]
-  # Ad hoc: tap a room to clean just that room now (script.suckist_clean_rooms), or Everywhere for the whole house.
+      visibility:
+      - {condition: state, entity: sensor.suckist_vacuum_error, state_not: none}
+    - type: tile
+      entity: sensor.suckist_dock_dock_error
+      name: Dock problem
+      icon: mdi:alert-circle-outline
+      grid_options: {columns: full}
+      visibility:
+      - {condition: state, entity: sensor.suckist_dock_dock_error, state_not: ok}
+  # Ad hoc: tap a room to clean just that room now, or Everywhere for the whole house.
   - type: grid
     cards:
     - type: heading
@@ -124,12 +110,36 @@ views:
         action: perform-action
         perform_action: script.suckist_clean_rooms
         data: {rooms: [22]}
-  # What the automatic cleans use; automation suckist_auto_clean sets them on the robot before each one.
+  # Automation suckist_auto_clean: after 2 days when we're both out, after 4 at noon regardless; it sets these on the
+  # robot before each run.
   - type: grid
     cards:
     - type: heading
-      heading: Timed clean settings
+      heading: Auto-clean
       icon: mdi:calendar-clock
+    - type: tile
+      entity: input_boolean.suckist_auto
+      name: Auto-clean
+      grid_options: {columns: full}
+      features_position: inline
+      features: [{type: toggle}]
+    - type: markdown
+      grid_options: {columns: full}
+      content: >-
+        {% set ended = as_datetime(states('sensor.suckist_last_clean_end')) %}
+        {% if ended is not none %}
+        {% set away_from = ended + timedelta(days=2) %}
+        {% set force = as_local(ended + timedelta(days=4)) %}
+        {% set force = force.replace(hour=12, minute=0, second=0) if force.hour < 12
+           else (force + timedelta(days=1)).replace(hour=12, minute=0, second=0) %}
+        {% if is_state('vacuum.suckist', 'cleaning') %}**Cleaning now.**
+        {% elif is_state('input_boolean.suckist_auto', 'off') %}Auto-clean is off.
+        {% elif now() < away_from %}Cleans when you're both out from {{ as_local(away_from).strftime('%a %-I %p') }},
+        or {{ force.strftime('%a') }} at noon regardless.
+        {% else %}Cleans the next time you're both out, or {{ 'today' if force.date() == now().date()
+           else force.strftime('%a') }} at noon regardless.
+        {% endif %}
+        {% endif %}
     - type: tile
       entity: input_select.suckist_auto_mode
       name: Mode
@@ -179,9 +189,6 @@ views:
       heading: Dock
       icon: mdi:home-import-outline
     - type: tile
-      entity: sensor.suckist_dock_dock_error
-      name: Dock
-    - type: tile
       entity: binary_sensor.suckist_dock_clean_water_box
       name: Clean water
     - type: tile
@@ -190,26 +197,31 @@ views:
     - type: tile
       entity: sensor.suckist_dock_mop_drying_remaining_time
       name: Mop drying left
-    # These three switches start the dock doing it now (and show while it is).
-    - type: tile
-      entity: switch.suckist_dock_dust_emptying
-      name: Empty the bin
-      icon: mdi:delete-empty-outline
-    - type: tile
-      entity: switch.suckist_dock_mop_washing
-      name: Wash the mop
-      icon: mdi:water-sync
-    - type: tile
-      entity: switch.suckist_dock_mop_drying
-      name: Dry the mop
-      icon: mdi:fan
     - type: tile
       entity: select.suckist_dock_empty_mode
       name: Auto-empty
-      grid_options: {columns: full}
-      features_position: inline
-      features:
-      - type: select-options
+    - type: heading
+      heading: Do it now
+      heading_style: subtitle
+    # These three switches start the dock doing it now (and show while it is).
+    - type: tile
+      entity: switch.suckist_dock_dust_emptying
+      name: Empty bin
+      icon: mdi:delete-empty-outline
+      grid_options: {columns: 4}
+      vertical: true
+    - type: tile
+      entity: switch.suckist_dock_mop_washing
+      name: Wash mop
+      icon: mdi:water-sync
+      grid_options: {columns: 4}
+      vertical: true
+    - type: tile
+      entity: switch.suckist_dock_mop_drying
+      name: Dry mop
+      icon: mdi:fan
+      grid_options: {columns: 4}
+      vertical: true
   - type: grid
     cards:
     - type: heading
@@ -250,3 +262,52 @@ views:
       name: Dock brush
       icon: mdi:brush-outline
       hold_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.suckist_dock_reset_cleaning_brush_consumable}, confirmation: {text: "Reset the dock brush timer?"}}
+  # Recorder keeps 10 days of history; the cleans-per-day chart is long-term statistics.
+  - type: grid
+    column_span: 3
+    cards:
+    - type: heading
+      heading: History
+      icon: mdi:chart-line
+    - type: history-graph
+      title: Battery · %
+      hours_to_show: 48
+      grid_options: {columns: 6}
+      entities:
+      - entity: sensor.suckist_battery
+        name: Battery
+    - type: history-graph
+      title: Days since a clean
+      hours_to_show: 240
+      grid_options: {columns: 6}
+      entities:
+      - entity: sensor.suckist_days_since_clean
+        name: Days
+    - type: history-graph
+      title: What it did, and who was home
+      hours_to_show: 168
+      grid_options: {columns: full}
+      entities:
+      - entity: sensor.suckist_status
+        name: Suckist
+      - entity: person.brend
+        name: Brendan
+      - entity: person.alyssa
+        name: Alyssa
+    - type: statistics-graph
+      title: Cleans per day
+      entities:
+      - entity: sensor.suckist_total_cleaning_count
+        name: Cleans
+      stat_types: [change]
+      period: day
+      days_to_show: 30
+      chart_type: bar
+      grid_options: {columns: 6}
+    - type: history-graph
+      title: Each clean · m²
+      hours_to_show: 240
+      grid_options: {columns: 6}
+      entities:
+      - entity: sensor.suckist_cleaning_area
+        name: Area
