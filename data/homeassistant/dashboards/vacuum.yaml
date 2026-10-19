@@ -273,15 +273,6 @@ views:
       name: Dock strainer
       icon: mdi:filter-outline
       hold_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.suckist_dock_reset_strainer_consumable}, confirmation: {text: "Reset the dock strainer timer?"}}
-    - type: tile
-      entity: sensor.suckist_dock_maintenance_brush_time_left
-      name: Dock brush
-      icon: mdi:brush-outline
-      hold_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.suckist_dock_reset_cleaning_brush_consumable}, confirmation: {text: "Reset the dock brush timer?"}}
-  # Recorder keeps 10 days of history; the cleans-per-day chart is long-term statistics.
-  - type: grid
-    column_span: 3
-    cards:
     - type: heading
       heading: History
       icon: mdi:chart-line

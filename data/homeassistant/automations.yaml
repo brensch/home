@@ -754,13 +754,14 @@
 - id: brendan_left_work
   alias: Brendan left work
   description: >-
-    Tells Alyssa when Brendan leaves the Work zone (Gridmatic) after being there at least 30 minutes, so driving
-    past doesn't count, with the drive time home: Waze (live traffic, from where he is; its polling is off because
+    Tells Alyssa when Brendan leaves his work (zone.work, "Brendan's work") after being there at least 30 minutes,
+    so driving past doesn't count, with the drive time home: Waze (live traffic, from where he is; its polling is off because
     Waze limits requests per IP, so it's refreshed here), or OpenStreetMap routing without traffic if Waze fails.
   triggers:
-  - trigger: state
+  - trigger: zone
     entity_id: person.brend
-    from: Work
+    zone: zone.work
+    event: leave
   conditions:
   - condition: template
     value_template: "{{ now() - trigger.from_state.last_changed >= timedelta(minutes=30) }}"
