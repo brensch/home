@@ -200,6 +200,15 @@ views:
     - type: tile
       entity: select.suckist_dock_empty_mode
       name: Auto-empty
+    - type: tile
+      entity: number.suckist_volume
+      name: Voice volume
+      icon: mdi:volume-high
+      grid_options: {columns: full}
+      features_position: inline
+      features:
+      - type: numeric-input
+        style: slider
     - type: heading
       heading: Dock actions on robot
       heading_style: subtitle
