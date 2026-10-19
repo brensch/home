@@ -18,20 +18,14 @@ views:
       icon: mdi:timer-sand
     - type: markdown
       grid_options: {columns: full}
+      # Plain HTML: markdown (# headings) isn't parsed inside an HTML block, so a "#" showed literally.
       content: >-
         {% set ended = as_datetime(states('sensor.suckist_last_clean_end')) %}
-        {% if ended is none %}<center>
-
-        # –
-
-        </center>{% else %}
+        {% if ended is none %}{% set since = '–' %}{% else %}
         {% set secs = (now() - ended).total_seconds() %}
         {% set d = (secs // 86400) | int %}{% set h = ((secs % 86400) // 3600) | int %}
-        <center>
-
-        # {{ (d ~ 'd ' if d else '') ~ h ~ 'h' }}
-
-        </center>{% endif %}
+        {% set since = (d ~ 'd ' if d else '') ~ h ~ 'h' %}{% endif %}
+        <center><h1>{{ since }}</h1></center>
   - type: grid
     cards:
     - type: heading
