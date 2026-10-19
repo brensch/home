@@ -2,9 +2,9 @@
 // axis), and PG&E's cost as a line (right axis, $). The built-in cards can't do two axes.
 //
 // It follows the dashboard's energy-date-selection: it subscribes to the same energy collection the energy-*
-// cards use (hass.connection["_energy_<dashboard url>"], or "_<collection_key>"), which hands it the range and
-// the grid and device statistics; the cost it fetches itself, by the same period rule (hour up to 2 days, day
-// up to ~a month, month beyond). Drawn with HA's own ha-chart-base, so it looks like the other charts.
+// cards use (hass.connection["_energy_<dashboard url>"], or "_<collection_key>") for the range and the Energy
+// settings, then fetches the meter, plug and cost statistics itself, all at one period: hourly up to 2 days,
+// daily up to 5 weeks, weekly up to ~3 months, monthly beyond (HA's own cards jump from daily to monthly). Drawn with HA's own ha-chart-base, so it looks like the other charts.
 // Both are frontend internals: if a HA update breaks this card, it shows the error instead of a chart.
 const PALETTE = ['#4269d0', '#efb118', '#ff725c', '#6cc5b0', '#3ca951', '#ff8ab7', '#a463f2', '#97bbf5'];
 
@@ -61,15 +61,17 @@ class EnergyCostCard extends HTMLElement {
   }
 
   async _update(data) {
-    const {start, end, prefs, stats} = data;
+    const {start, end, prefs} = data;
     const grid = prefs?.energy_sources?.find(s => s.type === 'grid');
     if (!grid?.stat_energy_from) { this._message('No grid source in the Energy settings.'); return; }
     const days = ((end || new Date()) - start) / 86400000;
-    const period = days > 35 ? 'month' : days > 2 ? 'day' : 'hour';
-    const cost = grid.stat_cost ? (await this._hass.callWS({
+    const period = days > 95 ? 'month' : days > 35 ? 'week' : days > 2 ? 'day' : 'hour';
+    const ids = [grid.stat_energy_from, ...prefs.device_consumption.map(d => d.stat_consumption), grid.stat_cost].filter(Boolean);
+    const stats = await this._hass.callWS({
       type: 'recorder/statistics_during_period', start_time: start.toISOString(), end_time: end?.toISOString(),
-      statistic_ids: [grid.stat_cost], period, types: ['change'],
-    }))[grid.stat_cost] || [] : [];
+      statistic_ids: ids, period, types: ['change'], units: {energy: 'kWh'},
+    });
+    const cost = grid.stat_cost ? stats[grid.stat_cost] || [] : [];
 
     const points = list => new Map((list || []).map(p => [p.start, Math.max(0, p.change || 0)]));
     const meter = points(stats[grid.stat_energy_from]);
@@ -97,9 +99,9 @@ class EnergyCostCard extends HTMLElement {
 
     const lang = this._hass.locale?.language;
     const fmt = (v, d) => new Intl.NumberFormat(lang, {maximumFractionDigits: d, minimumFractionDigits: d}).format(v);
-    const when = t => new Date(t).toLocaleString(lang, period === 'hour'
-      ? {weekday: 'short', hour: 'numeric'} : period === 'day' ? {weekday: 'short', day: 'numeric', month: 'short'}
-      : {month: 'long', year: 'numeric'});
+    const when = t => (period === 'week' ? 'Week of ' : '') + new Date(t).toLocaleString(lang, period === 'hour'
+      ? {weekday: 'short', hour: 'numeric'} : period === 'month' ? {month: 'long', year: 'numeric'}
+      : {weekday: 'short', day: 'numeric', month: 'short'});
     const options = {
       xAxis: {type: 'time', min: start.getTime(), max: (end || new Date()).getTime()},
       yAxis: [
