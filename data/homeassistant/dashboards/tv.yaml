@@ -1,0 +1,28 @@
+# TV: what's been on, for the range the date picker at the bottom shows (www/tv-card.js). From recorded history
+# of remote.tv (on/off, the app in front) and media_player.tv_cast (what's playing: title, channel, app), kept
+# 10 years; the TV's history before 2026-10-19 was restored from the 2026-10-18 backup.
+views:
+- title: TV
+  path: tv
+  icon: mdi:television-classic
+  type: sections
+  max_columns: 2
+  footer:
+    card:
+      type: energy-date-selection
+      opening_direction: right
+      vertical_opening_direction: up
+  sections:
+  - type: grid
+    column_span: 2
+    cards:
+    - type: custom:tv-timeline-card
+      title: What's been on
+    - type: custom:tv-daily-card
+      title: Hours of TV
+    - type: custom:tv-apps-card
+      title: Apps
+      columns: 12
+    - type: custom:tv-titles-card
+      title: Watched
+      columns: 12

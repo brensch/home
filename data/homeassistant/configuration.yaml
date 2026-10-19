@@ -30,17 +30,14 @@ recorder:
   # (~50k rows a day); their once-a-minute copies (sensor.router_temperature / router_cpu) are what's recorded.
   # Router traffic, memory, latency and per-device bandwidth aren't in HA at all: UniFi's own app has them.
   # 2026-10-19: images (all of them: their picture token changes every 5 minutes, so even an unavailable one adds
-  # a row each time; the 14 Steam Online game pictures alone were ~4k rows a day) and the TV's own entities (they
-  # drop out ~200-400 times a day in standby; sensor.tv records its on/off without the blips).
+  # a row each time, and a picture's history is no use; the 14 Steam Online game pictures alone were ~4k rows a
+  # day). The recorder can't drop just the "unavailable" rows, so the TV's entities stay recorded, blips and all.
   exclude:
     entity_globs:
       - image.*
     entities:
       - sensor.schrouter_cpu_temperature
       - sensor.schrouter_cpu_utilization
-      - media_player.tv
-      - media_player.tv_cast
-      - remote.tv
 
 # Disable TTS to prevent Google Cloud errors
 tts:
@@ -92,6 +89,7 @@ shell_command:
 
 # Dashboards defined as YAML in git (dashboards/), one job each:
 #   Home = daily command center (default);
+#   TV = what's been on and for how long (www/tv-card.js);
 #   Places = where each of us has been: a pie and a timeline per person, kept forever;
 #   Garage = the Tesla: controls, where it is, home charging and battery;
 #   Energy = our copy of the built-in Energy dashboard (that one can't take new
@@ -111,6 +109,8 @@ lovelace:
     - url: /local/energy-cost-card.js?v=8
       type: module
     - url: /local/presence-card.js?v=9
+      type: module
+    - url: /local/tv-card.js?v=2
       type: module
   dashboards:
     plants-dash:
@@ -151,6 +151,12 @@ lovelace:
       icon: mdi:robot-vacuum
       show_in_sidebar: true
       filename: dashboards/vacuum.yaml
+    tv-dash:
+      mode: yaml
+      title: TV
+      icon: mdi:television-classic
+      show_in_sidebar: true
+      filename: dashboards/tv.yaml
     places-dash:
       mode: yaml
       title: Places
