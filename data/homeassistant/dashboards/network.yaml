@@ -1,3 +1,5 @@
+# Network: who's connected and whether the internet's up. Traffic, load and per-device data live in UniFi's own
+# app (Traffic Identification is on there); Home Assistant keeps none of it.
 views:
 - title: Network
   path: network
@@ -19,41 +21,8 @@ views:
       name: Devices on lo-fi
       icon: mdi:wifi
     - type: tile
-      entity: sensor.schrouter_cloudflare_wan_latency
-      name: Internet latency
-      icon: mdi:timer-outline
-    - type: tile
-      entity: sensor.schrouter_uptime
-      name: Router started
-      icon: mdi:clock-start
-    - type: tile
-      entity: sensor.schrouter_cpu_temperature
-      name: Router temperature
-      icon: mdi:thermometer
-    - type: tile
       entity: update.schrouter_firmware
       name: Router firmware
-  - type: grid
-    cards:
-    - type: heading
-      heading: Activity
-      icon: mdi:chart-line
-    - type: history-graph
-      title: Internet traffic · Mbit/s
-      hours_to_show: 6
-      entities:
-      - entity: sensor.schrouter_port_4_rx
-        name: Download
-      - entity: sensor.schrouter_port_4_tx
-        name: Upload
-    - type: history-graph
-      title: Router load · %
-      hours_to_show: 6
-      entities:
-      - entity: sensor.schrouter_cpu_utilization
-        name: CPU
-      - entity: sensor.schrouter_memory_utilization
-        name: Memory
   - type: grid
     cards:
     - type: heading

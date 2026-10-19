@@ -17,13 +17,19 @@ scene: !include scenes.yaml
 #   - commit_interval batches writes instead of fsyncing every second.
 #   - auto_purge/purge_keep_days are the defaults, stated explicitly so the
 #     retention window is visible rather than implied.
-# No exclude: block on purpose — the *_energy / *_energy_cost sensors feed the
-# Energy dashboard's long-term statistics, and excluding an entity from the
-# recorder also stops its statistics being generated.
+# Exclude only what's copied at a slower rate: excluding an entity also stops
+# its long-term statistics (the *_energy / *_energy_cost sensors feed the
+# Energy dashboard's, so never exclude those).
 recorder:
   auto_purge: true
   purge_keep_days: 10
   commit_interval: 30
+  # Images have no use for history, and the plant photos (MQTT, from ~/plants) are re-published every 30 s:
+  # 2026-10-18 audit, ~11k rows a day for five pictures. (Router traffic and load aren't in HA at all any more:
+  # the UniFi integration's bandwidth sensors are off and its router-health sensors disabled; UniFi has its own.)
+  exclude:
+    entity_globs:
+      - image.plant_*
 
 # Disable TTS to prevent Google Cloud errors
 tts:
