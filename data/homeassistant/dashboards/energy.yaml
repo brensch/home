@@ -1,6 +1,6 @@
 # Energy: our copy of HA's built-in Energy dashboard (which can only hide its own cards, not take new ones), with
-# the cards we use plus a daily cost chart. The energy-* cards read the sources and devices from Settings →
-# Dashboards → Energy and, like the cost chart, follow the date picker in the footer. PG&E (opower) data arrives
+# the cards we use plus one chart of kWh and cost. The energy-* cards read the sources and devices from Settings →
+# Dashboards → Energy and, like the custom chart, follow the date picker in the footer. PG&E (opower) data arrives
 # about a day late, so today has plugs but no meter yet. No distribution card: on the default range (today) it
 # showed the plugs with no grid, and with no solar or battery it adds nothing to the chart above.
 views:
@@ -18,26 +18,14 @@ views:
   - type: grid
     column_span: 3
     cards:
-    # The meter's total split by plug, the rest "Untracked".
-    - type: energy-devices-detail-graph
+    # Plugs stacked with the meter's remainder as Untracked (kWh, left) and PG&E's cost (line, $ right), following
+    # the date picker; www/energy-cost-card.js.
+    - type: custom:energy-cost-card
       title: Electricity
       grid_options: {columns: full}
-    # The meter's kWh and PG&E's cost as side-by-side bars on one axis (statistics charts have only one; the
-    # numbers are close enough, ~10 kWh vs ~$3 a day, to read together).
-    - type: statistics-graph
-      title: kWh and cost · $
-      entities:
-      - entity: opower:pge_elec_3015750579_energy_consumption
-        name: kWh
-      - entity: opower:pge_elec_3015750579_energy_cost
-        name: Cost $
-      stat_types: [change]
-      # Follows the footer's date picker like the energy cards, hourly/daily/monthly bars to match.
-      energy_date_selection: true
-      period: auto
-      chart_type: bar
-      grid_options: {columns: full}
+  # Two columns: in one, the table's Energy and Cost columns were cut off.
   - type: grid
+    column_span: 2
     cards:
     - type: energy-sources-table
       title: Sources

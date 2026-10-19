@@ -87,6 +87,8 @@ lovelace:
       type: module
     - url: /local/plants-strategy.js?v=23
       type: module
+    - url: /local/energy-cost-card.js?v=2
+      type: module
   dashboards:
     plants-dash:
       mode: yaml
