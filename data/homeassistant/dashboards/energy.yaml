@@ -22,11 +22,15 @@ views:
     - type: energy-devices-detail-graph
       title: Electricity
       grid_options: {columns: full}
+    # The meter's kWh and PG&E's cost as side-by-side bars on one axis (statistics charts have only one; the
+    # numbers are close enough, ~10 kWh vs ~$3 a day, to read together).
     - type: statistics-graph
-      title: Cost per day · $
+      title: kWh and cost · $
       entities:
+      - entity: opower:pge_elec_3015750579_energy_consumption
+        name: kWh
       - entity: opower:pge_elec_3015750579_energy_cost
-        name: Cost
+        name: Cost $
       stat_types: [change]
       # Follows the footer's date picker like the energy cards, hourly/daily/monthly bars to match.
       energy_date_selection: true
