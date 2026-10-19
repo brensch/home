@@ -12,12 +12,15 @@
 // Hourly up to a little over a week, daily to ~3 months, weekly to ~a year, monthly beyond (fewer rows to sum).
 const PERIOD = days => days > 400 ? 'month' : days > 95 ? 'week' : days > 8 ? 'day' : 'hour';
 class CollectionCard extends HTMLElement {
+  // No fixed rows: each card is as tall as its content (fixed rows left gaps under the timeline and donuts).
+  getGridOptions() { return {columns: this.config?.columns ?? 'full'}; }
+
   setConfig(config) {
     this.config = config;
     if (!this.shadowRoot) {
       this.attachShadow({mode: 'open'});
       this.shadowRoot.innerHTML = `<style>
-        ha-card { padding: 16px; }
+        ha-card { padding: 16px; height: 100%; box-sizing: border-box; }
         .title { font-size: 20px; line-height: 28px; margin: 0 0 8px; }
         .msg { color: var(--secondary-text-color); padding: 32px 0; text-align: center; }
         .donut { display: flex; flex-direction: column; align-items: center; gap: 8px; }
@@ -72,7 +75,6 @@ class CollectionCard extends HTMLElement {
 
 class PresenceCard extends CollectionCard {
   getCardSize() { return 4; }
-  getGridOptions() { return {columns: 'full', rows: 4, min_rows: 3}; }
 
   async _load() {}
 
@@ -113,7 +115,6 @@ class PresenceCard extends CollectionCard {
 
 class PresenceMapCard extends CollectionCard {
   getCardSize() { return 8; }
-  getGridOptions() { return {columns: 'full', rows: 8, min_rows: 6}; }
 
   async _load() { await this._whenDefined('ha-map', {type: 'map', entities: ['zone.home']}); }
 
@@ -161,7 +162,6 @@ class PresenceMapCard extends CollectionCard {
 // The History page's own timeline (state-history-charts), fed the picked range, so it reads like History does.
 class PresenceTimelineCard extends CollectionCard {
   getCardSize() { return 3; }
-  getGridOptions() { return {columns: 'full', rows: 3, min_rows: 2}; }
 
   async _load() { await this._whenDefined('state-history-charts', {type: 'history-graph', entities: ['zone.home']}); }
 
