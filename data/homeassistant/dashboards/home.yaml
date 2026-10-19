@@ -116,11 +116,13 @@ views:
           - type: tile
             entity: media_player.tv
             name: TV
+          # Only while something's actually cast: in standby the TV drops both its connections (Cast and Android TV
+          # Remote) every few minutes for about a second, and "not off" let that "unavailable" flash the card up.
           - type: conditional
             conditions:
               - condition: state
                 entity: media_player.tv_cast
-                state_not: "off"
+                state: [playing, paused, buffering]
             card:
               type: media-control
               entity: media_player.tv_cast
