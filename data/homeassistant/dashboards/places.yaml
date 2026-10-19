@@ -1,5 +1,5 @@
 # Places: where each of us has been, for whatever range the date picker at the bottom shows (www/presence-card.js).
-# A 7-day history-graph timeline, then the donuts, which read the "<Name> at <Place>" sensors' long-term statistics (configuration.yaml), the map
+# The History page's timeline for the range, then the donuts, which read the "<Name> at <Place>" sensors' long-term statistics (configuration.yaml), the map
 # every raw position of the phones' GPS trackers and the car; history is kept for 10 years (recorder).
 views:
 - title: Places
@@ -13,19 +13,15 @@ views:
       opening_direction: right
       vertical_opening_direction: up
   sections:
-  # HA's own timeline: where each of us was, the last 7 days (it has a fixed range; the rest follows the date picker).
+  # Where each of us was, as the History page draws it, for the picked range.
   - type: grid
     column_span: 2
     cards:
-    - type: history-graph
+    - type: custom:presence-timeline-card
       title: Where we've been
-      hours_to_show: 168
-      grid_options: {columns: full}
       entities:
-      - entity: person.brend
-        name: Brendan
-      - entity: person.alyssa
-        name: Alyssa
+      - {entity: person.brend, name: Brendan}
+      - {entity: person.alyssa, name: Alyssa}
   - type: grid
     cards:
     - type: custom:presence-card

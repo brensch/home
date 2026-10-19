@@ -4,11 +4,11 @@
 //   custom:presence-card      one person: a donut of hours per place over the picked range, drawn as SVG (HA's
 //                             charts only include a pie for its own energy card). Reads the long-term statistics
 //                             of the "<Name> at <Place>" sensors (100 while there, else 0), so it goes back forever.
-//                             (The timeline is HA's own history graph on the page.)
+//   custom:presence-timeline-card  the History page's timeline (state-history-charts) for the picked range.
 //   custom:presence-map-card  every recorded position of the given trackers in the picked range, drawn as paths on
 //                             HA's own map (ha-map). Reads raw history (the recorder keeps it for 10 years).
 //
-// The map is HA's ha-map, a frontend internal: if an update breaks it, the card shows the error.
+// The map (ha-map) and the timeline (state-history-charts) are frontend internals: if an update breaks it, the card shows the error.
 // Hourly up to a little over a week, daily to ~3 months, weekly to ~a year, monthly beyond (fewer rows to sum).
 const PERIOD = days => days > 400 ? 'month' : days > 95 ? 'week' : days > 8 ? 'day' : 'hour';
 class CollectionCard extends HTMLElement {
@@ -158,8 +158,48 @@ class PresenceMapCard extends CollectionCard {
   }
 }
 
+// The History page's own timeline (state-history-charts), fed the picked range, so it reads like History does.
+class PresenceTimelineCard extends CollectionCard {
+  getCardSize() { return 3; }
+  getGridOptions() { return {columns: 'full', rows: 3, min_rows: 2}; }
+
+  async _load() { await this._whenDefined('state-history-charts', {type: 'history-graph', entities: ['zone.home']}); }
+
+  async _update(start, end) {
+    const entities = this.config.entities;
+    const end_ = new Date(Math.min(end.getTime(), Date.now()));
+    const history = await this._hass.callWS({
+      type: 'history/history_during_period', start_time: start.toISOString(), end_time: end_.toISOString(),
+      entity_ids: entities.map(e => e.entity), minimal_response: true, no_attributes: true,
+      significant_changes_only: false,
+    });
+    const timeline = entities.filter(e => history[e.entity]?.length).map(e => ({
+      name: e.name, entity_id: e.entity,
+      // state_localize is the bar's label ("Home", "Away", a zone's name); without it the bars don't draw.
+      data: history[e.entity].map(r => ({state: r.s, last_changed: 1000 * (r.lc ?? r.lu), attributes: {},
+        state_localize: this._hass.states[e.entity]
+          ? this._hass.formatEntityState(this._hass.states[e.entity], r.s) : r.s})),
+    }));
+    if (!this._elements) {
+      const body = this.shadowRoot.querySelector('.body');
+      body.innerHTML = '';
+      const chart = document.createElement('state-history-charts');
+      body.appendChild(chart);
+      this._elements = [chart];
+    }
+    const chart = this._elements[0];
+    chart.hass = this._hass;
+    chart.startTime = start;
+    chart.endTime = end_;
+    chart.upToNow = end >= Date.now();
+    chart.isLoadingData = false;
+    chart.historyData = {line: [], timeline};
+  }
+}
+
 customElements.define('presence-card', PresenceCard);
 customElements.define('presence-map-card', PresenceMapCard);
+customElements.define('presence-timeline-card', PresenceTimelineCard);
 window.customCards = window.customCards || [];
 window.customCards.push(
   {type: 'presence-card', name: 'Presence', description: 'Hours per place: pie and timeline, follows the date picker.'},
