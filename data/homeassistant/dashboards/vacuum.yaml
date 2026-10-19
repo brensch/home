@@ -35,7 +35,7 @@ views:
         {% elif is_state('input_boolean.suckist_auto', 'off') %}Auto-clean is off.
         {% elif now() < away_from %}Cleans when you're both out from {{ as_local(away_from).strftime('%a %-I %p') }},
         or {{ force.strftime('%a') }} at noon regardless.
-        {% else %}Cleans the next time you're both out (9 am to 8 pm), or {{ 'today' if force.date() == now().date()
+        {% else %}Cleans the next time you're both out, or {{ 'today' if force.date() == now().date()
            else force.strftime('%a') }} at noon regardless.
         {% endif %}
         </center>

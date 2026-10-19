@@ -672,7 +672,7 @@
   alias: Suckist auto-clean
   description: >-
     Cleans by the robot's own last-clean end (manual runs count). From 2 days after it, starts the next time the house
-    is empty (zone.home 0 for 5 minutes), 9:00-20:00. If that hasn't happened by the first noon at least 4 days after
+    is empty (zone.home 0 for 5 minutes), any time of day. If that hasn't happened by the first noon at least 4 days after
     it, starts at noon anyway, home or not. Checks when we leave and every 15 minutes (so it retries until 20:00 if it
     couldn't start). Never while it's off the dock, never twice in a day. Switch: input_boolean.suckist_auto.
   triggers:
@@ -686,9 +686,6 @@
   - condition: state
     entity_id: input_boolean.suckist_auto
     state: "on"
-  - condition: time
-    after: "09:00:00"
-    before: "20:00:00"
   - condition: state
     entity_id: vacuum.suckist
     state: docked
@@ -703,7 +700,7 @@
       {% set ended = as_datetime(states('sensor.suckist_last_clean_end')) %}
       {% set noon = today_at('12:00') %}
       {% if ended is none %}
-      {% elif now() >= noon and noon - ended >= timedelta(days=4) %}overdue
+      {% elif today_at('12:00') <= now() < today_at('20:00') and noon - ended >= timedelta(days=4) %}overdue
       {% elif now() - ended >= timedelta(days=2) and is_state('zone.home', '0')
          and now() - states.zone.home.last_changed >= timedelta(minutes=5) %}away
       {% endif %}
