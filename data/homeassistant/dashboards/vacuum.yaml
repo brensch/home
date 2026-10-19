@@ -9,24 +9,39 @@ views:
   type: sections
   max_columns: 3
   sections:
-  # The robot's own last-clean time is the only state; automation suckist_auto_clean: after 2 days when we're out, after 4 at noon regardless.
+  # The robot's own last-clean time is the only state; automation suckist_auto_clean: after 2 days when we're out,
+  # after 4 at noon regardless.
   - type: grid
     cards:
+    - type: heading
+      heading: Since last vacuumed
+      icon: mdi:timer-sand
     - type: markdown
       grid_options: {columns: full}
       content: >-
         {% set ended = as_datetime(states('sensor.suckist_last_clean_end')) %}
-        {% if ended is none %}<center>Suckist hasn't reported a clean yet.</center>{% else %}
+        {% if ended is none %}<center>
+
+        # –
+
+        </center>{% else %}
         {% set secs = (now() - ended).total_seconds() %}
         {% set d = (secs // 86400) | int %}{% set h = ((secs % 86400) // 3600) | int %}
-        {% set since = (d ~ (' day' if d == 1 else ' days') ~ (', ' ~ h ~ ' h' if h else '')) if d else
-           (h ~ (' hour' if h == 1 else ' hours')) %}
         <center>
 
-        # {{ since }}
+        # {{ (d ~ 'd ' if d else '') ~ h ~ 'h' }}
 
-        since Suckist last vacuumed ({{ as_local(ended).strftime('%a %-d %b, %-I:%M %p') }})
-
+        </center>{% endif %}
+  - type: grid
+    cards:
+    - type: heading
+      heading: Suckist
+      icon: mdi:robot-vacuum
+    - type: markdown
+      grid_options: {columns: full}
+      content: >-
+        {% set ended = as_datetime(states('sensor.suckist_last_clean_end')) %}
+        {% if ended is not none %}
         {% set away_from = ended + timedelta(days=2) %}
         {% set force = as_local(ended + timedelta(days=4)) %}
         {% set force = force.replace(hour=12, minute=0, second=0) if force.hour < 12
@@ -38,7 +53,6 @@ views:
         {% else %}Cleans the next time you're both out, or {{ 'today' if force.date() == now().date()
            else force.strftime('%a') }} at noon regardless.
         {% endif %}
-        </center>
         {% endif %}
     - type: tile
       entity: vacuum.suckist
