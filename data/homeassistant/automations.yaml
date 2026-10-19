@@ -671,10 +671,10 @@
 - id: suckist_auto_clean
   alias: Suckist auto-clean
   description: >-
-    Once it's been 3 days since Suckist last finished a clean (the robot's own record, so manual runs reset it),
-    starts it the next time the house is empty (zone.home 0 for 5 minutes), between 9:00 and 20:00, any day. Checks
-    when we leave and every 15 minutes, so it also catches becoming due while we're already out. Never while it's
-    off the dock and never twice in a day. Switch: input_boolean.suckist_auto.
+    Cleans by the robot's own last-clean end (manual runs count). From 2 days after it, starts the next time the house
+    is empty (zone.home 0 for 5 minutes), 9:00-20:00. If that hasn't happened by the first noon at least 4 days after
+    it, starts at noon anyway, home or not. Checks when we leave and every 15 minutes (so it retries until 20:00 if it
+    couldn't start). Never while it's off the dock, never twice in a day. Switch: input_boolean.suckist_auto.
   triggers:
   - trigger: numeric_state
     entity_id: zone.home
@@ -686,10 +686,6 @@
   - condition: state
     entity_id: input_boolean.suckist_auto
     state: "on"
-  - condition: state
-    entity_id: zone.home
-    state: "0"
-    for: 00:05:00
   - condition: time
     after: "09:00:00"
     before: "20:00:00"
@@ -698,24 +694,35 @@
     state: docked
   - condition: template
     value_template: >-
-      {% set ended = as_datetime(states('sensor.suckist_last_clean_end')) %}
       {% set began = as_datetime(states('sensor.suckist_last_clean_begin')) %}
-      {{ ended is not none and now() - ended >= timedelta(days=3)
-         and (began is none or as_local(began).date() != now().date()) }}
+      {{ began is none or as_local(began).date() != now().date() }}
+  - condition: template
+    value_template: "{{ reason != '' }}"
+  variables:
+    reason: >-
+      {% set ended = as_datetime(states('sensor.suckist_last_clean_end')) %}
+      {% set noon = today_at('12:00') %}
+      {% if ended is none %}
+      {% elif now() >= noon and noon - ended >= timedelta(days=4) %}overdue
+      {% elif now() - ended >= timedelta(days=2) and is_state('zone.home', '0')
+         and now() - states.zone.home.last_changed >= timedelta(minutes=5) %}away
+      {% endif %}
   actions:
   - variables:
-      message: "Cleaning now: it's been {{ states('sensor.suckist_days_since_clean') | float(3) | round(0) | int }} days."
+      message: >-
+        Cleaning now{{ ", you're both out" if reason | trim == 'away' else ", it's overdue" }}: it's been
+        {{ states('sensor.suckist_days_since_clean') | float(0) | round(1) }} days.
   - action: vacuum.start
     target:
       entity_id: vacuum.suckist
   - action: notify.mobile_app_schlixel
     data:
       title: Suckist
-      message: "{{ message }}"
+      message: "{{ message | trim }}"
   - action: notify.send_message
     target:
       entity_id: notify.alyssas_iphone
     data:
       title: Suckist
-      message: "{{ message }}"
+      message: "{{ message | trim }}"
   mode: single
