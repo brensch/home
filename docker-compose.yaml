@@ -3,7 +3,7 @@ name: homelab
 services:
   homeassistant:
     # Pinned so upgrades are deliberate (read the release notes' breaking changes first).
-    image: ghcr.io/home-assistant/home-assistant:2026.9.4
+    image: ghcr.io/home-assistant/home-assistant:2026.10.2
     container_name: homeassistant
     ports:
       - "8123:8123"

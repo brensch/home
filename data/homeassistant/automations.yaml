@@ -755,8 +755,8 @@
   alias: Brendan left work
   description: >-
     Tells Alyssa when Brendan leaves the Work zone (Gridmatic) after being there at least 30 minutes, so driving
-    past doesn't count, with the drive time home from where he is (rest_command.drive_home: OpenStreetMap routing,
-    no traffic, so it says "about").
+    past doesn't count, with the drive time home: Waze (live traffic, from where he is; its polling is off because
+    Waze limits requests per IP, so it's refreshed here), or OpenStreetMap routing without traffic if Waze fails.
   triggers:
   - trigger: state
     entity_id: person.brend
@@ -765,21 +765,37 @@
   - condition: template
     value_template: "{{ now() - trigger.from_state.last_changed >= timedelta(minutes=30) }}"
   actions:
-  - action: rest_command.drive_home
-    data:
-      lat: "{{ state_attr('person.brend', 'latitude') or state_attr('zone.work', 'latitude') }}"
-      lon: "{{ state_attr('person.brend', 'longitude') or state_attr('zone.work', 'longitude') }}"
-    response_variable: route
+  - action: homeassistant.update_entity
+    target:
+      entity_id: sensor.waze_brendan_drive_home
     continue_on_error: true
+  - delay: 00:00:05
+  - variables:
+      waze: >-
+        {{ states('sensor.waze_brendan_drive_home') | float(0) | round(0) | int
+           if now() - states.sensor.waze_brendan_drive_home.last_updated < timedelta(minutes=2) else 0 }}
+  - if:
+    - condition: template
+      value_template: "{{ waze == 0 }}"
+    then:
+    - action: rest_command.drive_home
+      data:
+        lat: "{{ state_attr('person.brend', 'latitude') or state_attr('zone.work', 'latitude') }}"
+        lon: "{{ state_attr('person.brend', 'longitude') or state_attr('zone.work', 'longitude') }}"
+      response_variable: route
+      continue_on_error: true
   - variables:
       minutes: >-
-        {{ (route.content.routes[0].duration / 60) | round(0) | int
-           if route is defined and route.status == 200 and route.content.routes is defined else none }}
+        {% if waze %}{{ waze }}
+        {% elif route is defined and route.status == 200 and route.content.routes is defined %}{{ (route.content.routes[0].duration / 60) | round(0) | int }}
+        {% else %}0{% endif %}
+      traffic: "{{ waze != 0 }}"
   - action: notify.send_message
     target:
       entity_id: notify.alyssas_iphone
     data:
       title: Brendan
       message: >-
-        Left work{{ ', home in about ' ~ minutes ~ ' min' if minutes else '' }}.
+        Left work{{ (', home in about ' ~ (minutes | trim) ~ ' min' ~ ('' if traffic else ' (no traffic info)'))
+        if (minutes | trim | int(0)) else '' }}.
   mode: single
