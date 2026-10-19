@@ -332,17 +332,3 @@ views:
       days_to_show: 30
       chart_type: bar
       grid_options: {columns: 6}
-    - type: markdown
-      title: Recent cleans
-      grid_options: {columns: full}
-      content: |
-        {%- set cleans = state_attr('sensor.suckist_cleans', 'cleans') or [] %}
-        {%- if cleans %}
-        | Finished | Took | Area | Started by |
-        |:--|--:|--:|:--|
-        {%- for c in cleans[:10] %}
-        | {{ as_local(as_datetime(c.end)).strftime('%a %-d %b, %-I:%M %p') }} | {{ c.minutes }} min | {{ c.area }} m² | {{ 'Auto-clean' if c.auto else 'By hand' }} |
-        {%- endfor %}
-        {%- else %}
-        No cleans recorded yet.
-        {%- endif %}

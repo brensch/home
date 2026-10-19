@@ -231,10 +231,8 @@ template:
         availability: "{{ as_datetime(states('sensor.suckist_last_clean_end')) is not none }}"
         state: "{{ ((now() - as_datetime(states('sensor.suckist_last_clean_end'))).total_seconds() / 86400) | round(1) }}"
   # Suckist's cleans one by one, from the robot's figures for its last clean (they settle a minute after it ends).
-  # "Suckist cleans" keeps the last 20 as an attribute (the Vacuum page's table; restored over restarts, deduped by
-  # end time, so the start/reload triggers only catch one that ended while HA was down). The minutes and area sensors
-  # are only available for an hour after each clean, so their daily statistics are one value per clean day, not the
-  # last value carried forward.
+  # Only available for an hour after each clean, so their daily statistics (the Vacuum page's bar charts) are one
+  # value per clean day, not the last value carried forward.
   - triggers:
       - trigger: state
         entity_id: sensor.suckist_last_clean_end
@@ -248,29 +246,13 @@ template:
         minutes: 5
     actions:
       - variables:
-          # Datetimes don't survive between variables (they come back as strings), so each works from the states.
-          end: "{{ states('sensor.suckist_last_clean_end') if has_value('sensor.suckist_last_clean_end') else '' }}"
           fresh: >-
             {% set ended = as_datetime(states('sensor.suckist_last_clean_end')) %}
             {{ ended is not none and now() - ended < timedelta(hours=1) }}
           entry: >-
-            {% set began = as_datetime(states('sensor.suckist_last_clean_begin')) %}
-            {% set auto_at = as_datetime(state_attr('automation.suckist_auto_clean', 'last_triggered') | string, none) %}
-            {{ {'end': states('sensor.suckist_last_clean_end'),
-                'minutes': states('sensor.suckist_cleaning_time') | float(0) | round(0) | int,
-                'area': states('sensor.suckist_cleaning_area') | float(0) | round(1),
-                'auto': began is not none and auto_at is not none
-                        and timedelta(minutes=-1) <= began - auto_at <= timedelta(minutes=10)} }}
+            {{ {'minutes': states('sensor.suckist_cleaning_time') | float(0) | round(0) | int,
+                'area': states('sensor.suckist_cleaning_area') | float(0) | round(1)} }}
     sensor:
-      - name: Suckist cleans
-        unique_id: suckist_cleans
-        icon: mdi:format-list-bulleted
-        state: "{{ end or this.state }}"
-        attributes:
-          cleans: >-
-            {% set log = this.attributes.get('cleans') or [] %}
-            {% if end and end not in log | map(attribute='end') | list %}{{ ([entry] + log)[:20] }}
-            {% else %}{{ log }}{% endif %}
       - name: Suckist clean minutes
         unique_id: suckist_clean_minutes
         icon: mdi:timer-outline
