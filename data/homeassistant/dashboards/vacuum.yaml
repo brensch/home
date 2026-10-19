@@ -203,22 +203,29 @@ views:
     - type: heading
       heading: Do it now
       heading_style: subtitle
-    # These three switches start the dock doing it now (and show while it is).
+    # Roborock exposes these as switches whose state is only "is the dock doing this right now" (off = idle, not
+    # "empty" or "clean"); nothing reports how full the bin is. So: no state text, tap to start, lit while it runs.
     - type: tile
       entity: switch.suckist_dock_dust_emptying
       name: Empty bin
+      hide_state: true
+      tap_action: {action: toggle}
       icon: mdi:delete-empty-outline
       grid_options: {columns: 4}
       vertical: true
     - type: tile
       entity: switch.suckist_dock_mop_washing
       name: Wash mop
+      hide_state: true
+      tap_action: {action: toggle}
       icon: mdi:water-sync
       grid_options: {columns: 4}
       vertical: true
     - type: tile
       entity: switch.suckist_dock_mop_drying
       name: Dry mop
+      hide_state: true
+      tap_action: {action: toggle}
       icon: mdi:fan
       grid_options: {columns: 4}
       vertical: true
