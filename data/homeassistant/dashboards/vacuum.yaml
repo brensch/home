@@ -201,7 +201,7 @@ views:
       entity: select.suckist_dock_empty_mode
       name: Auto-empty
     - type: heading
-      heading: Do it now
+      heading: Dock actions on robot
       heading_style: subtitle
     # Roborock exposes these as switches whose state is only "is the dock doing this right now" (off = idle, not
     # "empty" or "clean"); nothing reports how full the bin is. So: no state text, tap to start, lit while it runs.
