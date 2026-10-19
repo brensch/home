@@ -1,0 +1,14 @@
+
+alyssa_wifi:
+  name: Alyssa Wi-Fi
+  mac:
+  icon:
+  picture:
+  track: true
+
+brendan_wifi:
+  name: Brendan Wi-Fi
+  mac:
+  icon:
+  picture:
+  track: true

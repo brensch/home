@@ -892,3 +892,36 @@
       target:
         entity_id: cover.schlesla_windows
   mode: queued
+- id: wifi_presence
+  alias: Wi-Fi presence
+  description: >-
+    When a phone joins a Wi-Fi network we know, records a position for that person at that place
+    (device_tracker.alyssa_wifi / brendan_wifi, legacy trackers made by device_tracker.see, in each person's
+    trackers). The person takes the latest GPS-type update, so this places them straight away even when the
+    phone's own location is slow or a little off; the phone's next location update takes over again. Networks:
+    lo-fi = home, "Peck Home Mesh" = Alyssa's parents (seen 2026-10-09..12 at their house). The SSID only reaches
+    HA when the app can (on Wi-Fi at home, or over WireGuard), like everything else from the phone.
+  triggers:
+  - trigger: state
+    entity_id: sensor.alyssas_iphone_ssid
+    id: alyssa
+  - trigger: state
+    entity_id: sensor.schlixel_wi_fi_connection
+    id: brendan
+  conditions:
+  - condition: template
+    value_template: "{{ trigger.to_state is not none and trigger.to_state.state in networks }}"
+  variables:
+    networks:
+      lo-fi: zone.home
+      Peck Home Mesh: zone.alyssa_s_parents
+  actions:
+  - variables:
+      zone: "{{ networks[trigger.to_state.state] }}"
+  - action: device_tracker.see
+    data:
+      dev_id: "{{ trigger.id }}_wifi"
+      host_name: "{{ trigger.id | title }} Wi-Fi"
+      gps: "{{ [state_attr(zone, 'latitude'), state_attr(zone, 'longitude')] }}"
+      gps_accuracy: 0
+  mode: queued
