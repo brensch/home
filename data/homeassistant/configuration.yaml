@@ -46,6 +46,10 @@ homeassistant:
   unit_system: metric
   external_url: https://hass.brensch.com
   internal_url: http://192.168.1.8:8123
+  # The File integration's notify.location_log appends to /config/location_log/locations.csv (automation
+  # location_log); HA only writes files in allow-listed folders.
+  allowlist_external_dirs:
+    - /config/location_log
 
 # Combined room light groups: Hue room + Nanoleaf/WLED, so one tile
 # controls every light in the room (not just the Hue bulbs). Defined in
@@ -85,6 +89,7 @@ shell_command:
 
 # Dashboards defined as YAML in git (dashboards/), one job each:
 #   Home = daily command center (default);
+#   Places = visits and time at the gym, work and Alyssa's parents (kept forever);
 #   Garage = the Tesla: controls, where it is, home charging and battery;
 #   Energy = our copy of the built-in Energy dashboard (that one can't take new
 #   cards) with one kWh + cost chart (www/energy-cost-card.js); the built-in
@@ -141,6 +146,12 @@ lovelace:
       icon: mdi:robot-vacuum
       show_in_sidebar: true
       filename: dashboards/vacuum.yaml
+    places-dash:
+      mode: yaml
+      title: Places
+      icon: mdi:map-marker-radius
+      show_in_sidebar: true
+      filename: dashboards/places.yaml
     garage-dash:
       mode: yaml
       title: Garage
@@ -191,6 +202,32 @@ input_select:
 # kWh the car has drawn charging at home, for the Garage page (not an Energy dashboard device: the car belongs on
 # Garage; on Energy its charging stays inside Untracked).
 sensor:
+  # Hours in a place so far this week (Monday 00:00 on). The recorder keeps 10 days, enough for a week; each
+  # week's value is kept forever in long-term statistics (the Places page's charts).
+  - platform: history_stats
+    name: Brendan at work this week
+    unique_id: brendan_work_hours_week
+    entity_id: person.brend
+    state: "Brendan's work"
+    type: time
+    start: "{{ (now() - timedelta(days=now().weekday())).replace(hour=0, minute=0, second=0, microsecond=0) }}"
+    end: "{{ now() }}"
+  - platform: history_stats
+    name: Brendan at the gym this week
+    unique_id: brendan_gym_hours_week
+    entity_id: person.brend
+    state: "Gym"
+    type: time
+    start: "{{ (now() - timedelta(days=now().weekday())).replace(hour=0, minute=0, second=0, microsecond=0) }}"
+    end: "{{ now() }}"
+  - platform: history_stats
+    name: Alyssa at the gym this week
+    unique_id: alyssa_gym_hours_week
+    entity_id: person.alyssa
+    state: "Gym"
+    type: time
+    start: "{{ (now() - timedelta(days=now().weekday())).replace(hour=0, minute=0, second=0, microsecond=0) }}"
+    end: "{{ now() }}"
   - platform: integration
     name: Schlesla home charging energy
     unique_id: schlesla_home_charging_energy
@@ -381,6 +418,60 @@ template:
         icon: mdi:cpu-64-bit
         availability: "{{ has_value('sensor.schrouter_cpu_utilization') }}"
         state: "{{ states('sensor.schrouter_cpu_utilization') }}"
+  # Visits, counted forever: one per arrival that lasts (gym 10 minutes, Alyssa's parents 15 minutes, counted
+  # once however many of us go). total_increasing, so the Places page charts visits per week or month from
+  # long-term statistics. They keep their count over restarts.
+  - triggers:
+      - trigger: state
+        entity_id: person.brend
+        to: Gym
+        for: 00:10:00
+      - trigger: homeassistant
+        event: start
+      - trigger: event
+        event_type: event_template_reloaded
+    sensor:
+      - name: Brendan gym visits
+        unique_id: brendan_gym_visits
+        icon: mdi:counter
+        unit_of_measurement: visits
+        state_class: total_increasing
+        # The start/reload triggers only turn "unknown" into 0 (they never count).
+        state: "{{ this.state | int(0) + (1 if trigger.platform in ['state', 'numeric_state'] else 0) }}"
+  - triggers:
+      - trigger: state
+        entity_id: person.alyssa
+        to: Gym
+        for: 00:10:00
+      - trigger: homeassistant
+        event: start
+      - trigger: event
+        event_type: event_template_reloaded
+    sensor:
+      - name: Alyssa gym visits
+        unique_id: alyssa_gym_visits
+        icon: mdi:counter
+        unit_of_measurement: visits
+        state_class: total_increasing
+        # The start/reload triggers only turn "unknown" into 0 (they never count).
+        state: "{{ this.state | int(0) + (1 if trigger.platform in ['state', 'numeric_state'] else 0) }}"
+  - triggers:
+      - trigger: numeric_state
+        entity_id: zone.alyssa_s_parents
+        above: 0
+        for: 00:15:00
+      - trigger: homeassistant
+        event: start
+      - trigger: event
+        event_type: event_template_reloaded
+    sensor:
+      - name: Alyssa's parents visits
+        unique_id: parents_visits
+        icon: mdi:counter
+        unit_of_measurement: visits
+        state_class: total_increasing
+        # The start/reload triggers only turn "unknown" into 0 (they never count).
+        state: "{{ this.state | int(0) + (1 if trigger.platform in ['state', 'numeric_state'] else 0) }}"
   # Free space as a percentage, for the Health page and the disk alert (System Monitor reports usage % and free GiB).
   - sensor:
       - name: Server disk free percent

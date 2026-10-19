@@ -892,3 +892,30 @@
       target:
         entity_id: cover.schlesla_windows
   mode: queued
+- id: location_log
+  alias: Location log
+  description: >-
+    Keeps every position forever (the recorder only keeps 10 days): one CSV line per new position or place of each
+    phone's GPS tracker (not the person: at home that follows the Wi-Fi tracker, which has no coordinates) and the car, appended to /config/location_log/locations.csv by the File integration's notify entity.
+    Backfilled 2026-10-18 from the recorder's last 10 days. Columns: time (UTC), who, place, latitude, longitude,
+    accuracy_m.
+  triggers:
+  - trigger: state
+    entity_id: [device_tracker.brend_phone, device_tracker.alyssas_iphone, device_tracker.schlesla_location]
+  conditions:
+  - condition: template
+    value_template: >-
+      {% set n, o = trigger.to_state, trigger.from_state %}
+      {{ n is not none and n.attributes.latitude is defined and n.state not in ['unknown', 'unavailable']
+         and (o is none or o.state != n.state or o.attributes.latitude != n.attributes.latitude
+              or o.attributes.longitude != n.attributes.longitude) }}
+  actions:
+  - action: notify.send_message
+    target:
+      entity_id: notify.location_log
+    data:
+      message: >-
+        {% set n = trigger.to_state %}
+        {{ n.last_updated.astimezone(utcnow().tzinfo).isoformat(timespec='seconds') }},{{ {'device_tracker.brend_phone': 'brendan', 'device_tracker.alyssas_iphone': 'alyssa'}.get(n.entity_id, 'schlesla') }},{{ {'home': 'Home', 'not_home': 'Away'}.get(n.state, n.state) }},{{ n.attributes.latitude | round(6) }},{{ n.attributes.longitude | round(6) }},{{ n.attributes.gps_accuracy | round(0) | int if n.attributes.gps_accuracy is number else '' }}
+  mode: queued
+  max: 50

@@ -1,0 +1,82 @@
+# Places: how often we go to the gym, Brendan's work and Alyssa's parents, from the Places sensors in
+# configuration.yaml (visit counters and this-week history_stats). Charts come from long-term statistics, which
+# are kept forever, so they grow from 2026-10-18 on. Every raw position is kept too, in
+# /config/location_log/locations.csv (automation location_log).
+views:
+- title: Places
+  path: places
+  icon: mdi:map-marker-radius
+  type: sections
+  max_columns: 3
+  sections:
+  - type: grid
+    cards:
+    - type: heading
+      heading: Gym
+      icon: mdi:dumbbell
+    - type: tile
+      entity: sensor.brendan_at_the_gym_this_week
+      name: Brendan this week
+    - type: tile
+      entity: sensor.alyssa_at_the_gym_this_week
+      name: Alyssa this week
+    - type: statistics-graph
+      title: Visits per week
+      entities:
+      - entity: sensor.brendan_gym_visits
+        name: Brendan
+      - entity: sensor.alyssa_gym_visits
+        name: Alyssa
+      stat_types: [change]
+      period: week
+      days_to_show: 182
+      chart_type: bar
+      grid_options: {columns: full}
+    - type: statistics-graph
+      title: Hours per week
+      entities:
+      - entity: sensor.brendan_at_the_gym_this_week
+        name: Brendan
+      - entity: sensor.alyssa_at_the_gym_this_week
+        name: Alyssa
+      stat_types: [max]
+      period: week
+      days_to_show: 182
+      chart_type: bar
+      grid_options: {columns: full}
+  - type: grid
+    cards:
+    - type: heading
+      heading: Brendan's work
+      icon: mdi:briefcase
+    - type: tile
+      entity: sensor.brendan_at_work_this_week
+      name: This week
+    - type: statistics-graph
+      title: Hours per week
+      entities:
+      - entity: sensor.brendan_at_work_this_week
+        name: Hours
+      stat_types: [max]
+      period: week
+      days_to_show: 182
+      chart_type: bar
+      grid_options: {columns: full}
+  - type: grid
+    cards:
+    - type: heading
+      heading: Alyssa's parents
+      icon: mdi:home-heart
+    - type: tile
+      entity: sensor.alyssa_s_parents_visits
+      name: Visits so far
+    - type: statistics-graph
+      title: Visits per month
+      entities:
+      - entity: sensor.alyssa_s_parents_visits
+        name: Visits
+      stat_types: [change]
+      period: month
+      days_to_show: 365
+      chart_type: bar
+      grid_options: {columns: full}
