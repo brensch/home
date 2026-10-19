@@ -203,7 +203,7 @@ template:
   - sensor:
       - name: Suckist days since clean
         unique_id: suckist_days_since_clean
-        unit_of_measurement: d
+        unit_of_measurement: days
         icon: mdi:calendar-refresh
         availability: "{{ as_datetime(states('sensor.suckist_last_clean_end')) is not none }}"
         state: "{{ ((now() - as_datetime(states('sensor.suckist_last_clean_end'))).total_seconds() / 86400) | round(1) }}"
