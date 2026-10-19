@@ -207,6 +207,26 @@ template:
         icon: mdi:calendar-refresh
         availability: "{{ as_datetime(states('sensor.suckist_last_clean_end')) is not none }}"
         state: "{{ ((now() - as_datetime(states('sensor.suckist_last_clean_end'))).total_seconds() / 86400) | round(1) }}"
+  # Suckist's mop as an on/off: on = vacuum and mop, off = vacuum only. It's the robot's own cleaning mode, so it
+  # applies to every run (the Vacuum page's room buttons, its Start button and auto-clean alike).
+  - switch:
+      - name: Suckist mop
+        unique_id: suckist_mop
+        icon: mdi:water
+        state: "{{ not is_state('select.suckist_cleaning_mode', 'vacuum') }}"
+        availability: "{{ has_value('select.suckist_cleaning_mode') }}"
+        turn_on:
+          - action: select.select_option
+            target:
+              entity_id: select.suckist_cleaning_mode
+            data:
+              option: vac_and_mop
+        turn_off:
+          - action: select.select_option
+            target:
+              entity_id: select.suckist_cleaning_mode
+            data:
+              option: vacuum
   # Free space as a percentage, for the Health page and the disk alert (System Monitor reports usage % and free GiB).
   - sensor:
       - name: Server disk free percent

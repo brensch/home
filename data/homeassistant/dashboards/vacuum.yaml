@@ -64,6 +64,66 @@ views:
       grid_options: {columns: full}
       features_position: inline
       features: [{type: toggle}]
+  # Ad hoc: tap a room to clean just that room now (script.suckist_clean_rooms), or Everywhere for the whole house.
+  - type: grid
+    cards:
+    - type: heading
+      heading: Clean now
+      icon: mdi:gesture-tap
+    - type: tile
+      entity: switch.suckist_mop
+      name: Mop as well
+      grid_options: {columns: full}
+      features_position: inline
+      features: [{type: toggle}]
+    - type: button
+      name: Everywhere
+      icon: mdi:home-outline
+      grid_options: {columns: 4, rows: 2}
+      tap_action:
+        action: perform-action
+        perform_action: vacuum.start
+        target: {entity_id: vacuum.suckist}
+    - type: button
+      name: Living room
+      icon: mdi:sofa-outline
+      grid_options: {columns: 4, rows: 2}
+      tap_action:
+        action: perform-action
+        perform_action: script.suckist_clean_rooms
+        data: {rooms: [16]}
+    - type: button
+      name: Kitchen
+      icon: mdi:countertop-outline
+      grid_options: {columns: 4, rows: 2}
+      tap_action:
+        action: perform-action
+        perform_action: script.suckist_clean_rooms
+        data: {rooms: [21]}
+    - type: button
+      name: Bedroom
+      icon: mdi:bed-outline
+      grid_options: {columns: 4, rows: 2}
+      tap_action:
+        action: perform-action
+        perform_action: script.suckist_clean_rooms
+        data: {rooms: [19]}
+    - type: button
+      name: Bathroom
+      icon: mdi:shower
+      grid_options: {columns: 4, rows: 2}
+      tap_action:
+        action: perform-action
+        perform_action: script.suckist_clean_rooms
+        data: {rooms: [17]}
+    - type: button
+      name: Corridor
+      icon: mdi:door-open
+      grid_options: {columns: 4, rows: 2}
+      tap_action:
+        action: perform-action
+        perform_action: script.suckist_clean_rooms
+        data: {rooms: [22]}
   - type: grid
     cards:
     - type: heading

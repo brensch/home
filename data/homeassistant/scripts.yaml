@@ -154,3 +154,24 @@ all_lights_off:
     - action: light.turn_off
       target:
         entity_id: all
+
+# Cleans some of Suckist's rooms now (the Vacuum page's room buttons). Rooms are the Roborock map's segment ids:
+# 16 Living room, 17 Bathroom, 19 Bedroom, 21 Kitchen, 22 Corridor (roborock.get_maps lists them; they change if
+# the map's rooms are redrawn). A new request replaces whatever it was doing.
+suckist_clean_rooms:
+  alias: Suckist clean rooms
+  icon: mdi:robot-vacuum
+  fields:
+    rooms:
+      description: Roborock segment ids
+      example: "[21]"
+      required: true
+  sequence:
+    - action: vacuum.send_command
+      target:
+        entity_id: vacuum.suckist
+      data:
+        command: app_segment_clean
+        params:
+          - segments: "{{ rooms | map('int') | list }}"
+  mode: restart
