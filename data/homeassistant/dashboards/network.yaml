@@ -1,5 +1,6 @@
 # Network: who's connected and whether the internet's up. Traffic, load and per-device data live in UniFi's own
-# app (Traffic Identification is on there); Home Assistant keeps none of it.
+# app (Traffic Identification is on there, linked below); HA keeps only the router's temperature and CPU, once a
+# minute.
 views:
 - title: Network
   path: network
@@ -21,72 +22,168 @@ views:
       name: Devices on lo-fi
       icon: mdi:wifi
     - type: tile
+      entity: sensor.router_temperature
+      name: Router temperature
+    - type: tile
+      entity: sensor.router_cpu
+      name: Router CPU
+    - type: tile
       entity: update.schrouter_firmware
       name: Router firmware
+    # router.brensch.com is Caddy in front of the UDR's console (home network and WireGuard only).
+    - type: button
+      name: Open UniFi
+      icon: mdi:open-in-new
+      show_state: false
+      grid_options: {columns: 6, rows: 1}
+      layout: horizontal
+      tap_action:
+        action: url
+        url_path: https://router.brensch.com/network/default/dashboard
+    - type: history-graph
+      title: Router, last 24 hours
+      hours_to_show: 24
+      grid_options: {columns: full}
+      entities:
+      - entity: sensor.router_temperature
+        name: Temperature
+      - entity: sensor.router_cpu
+        name: CPU
+  # Each device while it's connected, with its IP (the UniFi tracker's ip attribute).
   - type: grid
     cards:
     - type: heading
       heading: Connections
       icon: mdi:lan
-    - type: entity-filter
-      entities:
-      - entity: device_tracker.bose_portable_home_speaker
-        name: Bose-Portable-Home-Speaker
-      - entity: device_tracker.bose_smart_soundbar_300
-        name: Bose-Smart-Soundbar-300
-      - entity: device_tracker.brends_mac_mini
-        name: brends-Mac-mini
-      - entity: device_tracker.desk
-        name: desk
-      - entity: device_tracker.nanoleaf
-        name: Desk Lines
-      - entity: device_tracker.fridge
-        name: fridge
-      - entity: device_tracker.google_nest_hub
-        name: Google-Nest-Hub
-      - entity: device_tracker.lifx_par38_815cc8
-        name: Kitchen LIFX
-      - entity: device_tracker.nanoleaf_lines
-        name: Kitchen Lines
-      - entity: device_tracker.mac
-        name: Mac
-      - entity: device_tracker.media
-        name: media
-      - entity: device_tracker.piano
-        name: piano
-      - entity: device_tracker.pixel_9_pro
-        name: Pixel-9-Pro
-      - entity: device_tracker.roborock_vacuum_a104
-        name: roborock-vacuum-a104
-      - entity: device_tracker.schbox
-        name: Schbox
-      - entity: device_tracker.tidbyt
-        name: Tidbyt
-      - entity: device_tracker.sony
-        name: TV
-      - entity: device_tracker.wled_wled
-        name: wled-WLED
-      conditions:
-      - condition: state
-        state: home
-      show_empty: false
-      card:
-        type: entities
-        title: On lo-fi
-        show_header_toggle: false
-    - type: entity-filter
-      entities:
-      - entity: device_tracker.snek3
-        name: Home server
-      - entity: device_tracker.square
-        name: Hue bridge
-      - entity: device_tracker.unifi_default_72_2d_b8_22_bb_d0
-        name: Wired device · 72:2D:B8:22:BB:D0
-      conditions:
-      - condition: state
-        state: home
-      show_empty: false
-      card:
-        type: entities
-        title: Wired clients
-        show_header_toggle: false
+    - type: heading
+      heading: On lo-fi
+      heading_style: subtitle
+    - type: tile
+      entity: device_tracker.bose_portable_home_speaker
+      name: Bose-Portable-Home-Speaker
+      state_content: [ip]
+      visibility:
+      - {condition: state, entity: device_tracker.bose_portable_home_speaker, state: home}
+    - type: tile
+      entity: device_tracker.bose_smart_soundbar_300
+      name: Bose-Smart-Soundbar-300
+      state_content: [ip]
+      visibility:
+      - {condition: state, entity: device_tracker.bose_smart_soundbar_300, state: home}
+    - type: tile
+      entity: device_tracker.brends_mac_mini
+      name: brends-Mac-mini
+      state_content: [ip]
+      visibility:
+      - {condition: state, entity: device_tracker.brends_mac_mini, state: home}
+    - type: tile
+      entity: device_tracker.desk
+      name: desk
+      state_content: [ip]
+      visibility:
+      - {condition: state, entity: device_tracker.desk, state: home}
+    - type: tile
+      entity: device_tracker.nanoleaf
+      name: Desk Lines
+      state_content: [ip]
+      visibility:
+      - {condition: state, entity: device_tracker.nanoleaf, state: home}
+    - type: tile
+      entity: device_tracker.fridge
+      name: fridge
+      state_content: [ip]
+      visibility:
+      - {condition: state, entity: device_tracker.fridge, state: home}
+    - type: tile
+      entity: device_tracker.google_nest_hub
+      name: Google-Nest-Hub
+      state_content: [ip]
+      visibility:
+      - {condition: state, entity: device_tracker.google_nest_hub, state: home}
+    - type: tile
+      entity: device_tracker.lifx_par38_815cc8
+      name: Kitchen LIFX
+      state_content: [ip]
+      visibility:
+      - {condition: state, entity: device_tracker.lifx_par38_815cc8, state: home}
+    - type: tile
+      entity: device_tracker.nanoleaf_lines
+      name: Kitchen Lines
+      state_content: [ip]
+      visibility:
+      - {condition: state, entity: device_tracker.nanoleaf_lines, state: home}
+    - type: tile
+      entity: device_tracker.mac
+      name: Mac
+      state_content: [ip]
+      visibility:
+      - {condition: state, entity: device_tracker.mac, state: home}
+    - type: tile
+      entity: device_tracker.media
+      name: media
+      state_content: [ip]
+      visibility:
+      - {condition: state, entity: device_tracker.media, state: home}
+    - type: tile
+      entity: device_tracker.piano
+      name: piano
+      state_content: [ip]
+      visibility:
+      - {condition: state, entity: device_tracker.piano, state: home}
+    - type: tile
+      entity: device_tracker.pixel_9_pro
+      name: Pixel-9-Pro
+      state_content: [ip]
+      visibility:
+      - {condition: state, entity: device_tracker.pixel_9_pro, state: home}
+    - type: tile
+      entity: device_tracker.roborock_vacuum_a104
+      name: roborock-vacuum-a104
+      state_content: [ip]
+      visibility:
+      - {condition: state, entity: device_tracker.roborock_vacuum_a104, state: home}
+    - type: tile
+      entity: device_tracker.schbox
+      name: Schbox
+      state_content: [ip]
+      visibility:
+      - {condition: state, entity: device_tracker.schbox, state: home}
+    - type: tile
+      entity: device_tracker.tidbyt
+      name: Tidbyt
+      state_content: [ip]
+      visibility:
+      - {condition: state, entity: device_tracker.tidbyt, state: home}
+    - type: tile
+      entity: device_tracker.sony
+      name: TV
+      state_content: [ip]
+      visibility:
+      - {condition: state, entity: device_tracker.sony, state: home}
+    - type: tile
+      entity: device_tracker.wled_wled
+      name: wled-WLED
+      state_content: [ip]
+      visibility:
+      - {condition: state, entity: device_tracker.wled_wled, state: home}
+    - type: heading
+      heading: Wired clients
+      heading_style: subtitle
+    - type: tile
+      entity: device_tracker.snek3
+      name: Home server
+      state_content: [ip]
+      visibility:
+      - {condition: state, entity: device_tracker.snek3, state: home}
+    - type: tile
+      entity: device_tracker.square
+      name: Hue bridge
+      state_content: [ip]
+      visibility:
+      - {condition: state, entity: device_tracker.square, state: home}
+    - type: tile
+      entity: device_tracker.unifi_default_72_2d_b8_22_bb_d0
+      name: Wired device · 72:2D:B8:22:BB:D0
+      state_content: [ip]
+      visibility:
+      - {condition: state, entity: device_tracker.unifi_default_72_2d_b8_22_bb_d0, state: home}

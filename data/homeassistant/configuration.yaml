@@ -24,12 +24,16 @@ recorder:
   auto_purge: true
   purge_keep_days: 10
   commit_interval: 30
-  # Images have no use for history, and the plant photos (MQTT, from ~/plants) are re-published every 30 s:
-  # 2026-10-18 audit, ~11k rows a day for five pictures. (Router traffic and load aren't in HA at all any more:
-  # the UniFi integration's bandwidth sensors are off and its router-health sensors disabled; UniFi has its own.)
+  # 2026-10-18 audit. Images have no use for history, and the plant photos (MQTT, from ~/plants) are re-published
+  # every 30 s: ~11k rows a day for five pictures. The router's temperature and CPU arrive every few seconds
+  # (~50k rows a day); their once-a-minute copies (sensor.router_temperature / router_cpu) are what's recorded.
+  # Router traffic, memory, latency and per-device bandwidth aren't in HA at all: UniFi's own app has them.
   exclude:
     entity_globs:
       - image.plant_*
+    entities:
+      - sensor.schrouter_cpu_temperature
+      - sensor.schrouter_cpu_utilization
 
 # Disable TTS to prevent Google Cloud errors
 tts:
@@ -358,6 +362,25 @@ template:
         icon: mdi:cash
         availability: "{{ has_value('sensor.schlesla_home_charging_this_month') }}"
         state: "{{ (states('sensor.schlesla_home_charging_this_month') | float(0) * 0.286) | round(2) }}"
+  # The router's temperature and CPU once a minute (the originals update every few seconds and aren't recorded).
+  - triggers:
+      - trigger: time_pattern
+        minutes: /1
+    sensor:
+      - name: Router temperature
+        unique_id: router_temperature
+        unit_of_measurement: °C
+        device_class: temperature
+        state_class: measurement
+        availability: "{{ has_value('sensor.schrouter_cpu_temperature') }}"
+        state: "{{ states('sensor.schrouter_cpu_temperature') }}"
+      - name: Router CPU
+        unique_id: router_cpu
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:cpu-64-bit
+        availability: "{{ has_value('sensor.schrouter_cpu_utilization') }}"
+        state: "{{ states('sensor.schrouter_cpu_utilization') }}"
   # Free space as a percentage, for the Health page and the disk alert (System Monitor reports usage % and free GiB).
   - sensor:
       - name: Server disk free percent
