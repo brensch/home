@@ -310,14 +310,15 @@
       entity_id: light.bedroom
     data:
       brightness_pct: 1
-      color_temp_kelvin: 2200
+      color_temp_kelvin: 2732
       transition: 0
+  # 2732 K is the Hue bulbs' own default white, the same as the rest of the house.
   - action: light.turn_on
     target:
       entity_id: light.bedroom
     data:
       brightness_pct: 80
-      color_temp_kelvin: 4000
+      color_temp_kelvin: 2732
       transition: 1200
   mode: single
 - id: balcony_motion_light
@@ -352,11 +353,13 @@
   mode: single
 - id: tv_lights
   alias: TV lights
-  description: Playing turns the kitchen off (always) and, after dark, dims the living room; stopping brings the living room back up.
+  description: Playing turns the kitchen off (always) and, after dark, dims the living room; finishing brings the living room back up.
   # media_player.tv_cast (Google Cast) reports playing/paused/buffering for
   # YouTube, Stremio and other Cast-based apps, including ones opened with the
-  # remote. Stremio flickers between states when starting or seeking, so
-  # "stopped" means not playing for 5 s, and resuming within that does nothing.
+  # remote. Seeking and skipping ads show as paused for 3-10 s, so pausing never
+  # counts as finished. Finished is the app closed or the TV off (off/unavailable)
+  # for 5 s, or nothing loaded (idle: the video ended, back at the app's menu)
+  # for a minute, since idle gaps between episodes run 10-60 s.
   triggers:
   - trigger: state
     entity_id: media_player.tv_cast
@@ -365,8 +368,13 @@
     - unknown
     - unavailable
     id: playing
+  - trigger: state
+    entity_id: media_player.tv_cast
+    to: idle
+    for: 00:01:00
+    id: stopped
   - trigger: template
-    value_template: "{{ not is_state('media_player.tv_cast', 'playing') }}"
+    value_template: "{{ states('media_player.tv_cast') in ['off', 'unavailable', 'unknown', 'standby'] }}"
     for: 00:00:05
     id: stopped
   actions:
