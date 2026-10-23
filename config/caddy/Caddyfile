@@ -69,6 +69,28 @@ monitor.{$DOMAIN} {
 	}
 }
 
+# snek's dev copy (~/snekgame), for trying UI changes on a phone before they
+# go to snek.brensch.com. Home network and WireGuard only. The game itself
+# runs over WebTransport on UDP 443, which snek-server serves directly with
+# this site's certificate (UFW allows it from the LAN and VPN only).
+snek-dev.{$DOMAIN} {
+	tls {
+		issuer acme {
+			dir https://acme-v02.api.letsencrypt.org/directory
+			dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+			resolvers 1.1.1.1 8.8.8.8
+		}
+	}
+
+	@lan remote_ip 192.168.1.0/24 192.168.10.0/24 127.0.0.1 ::1
+	handle @lan {
+		reverse_proxy host.docker.internal:8097
+	}
+	handle {
+		respond "Local network access only" 403
+	}
+}
+
 herdcore.{$DOMAIN} {
 	encode gzip
 
