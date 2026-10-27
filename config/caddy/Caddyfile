@@ -1,5 +1,5 @@
-# Global: HTTP/3 off (UDP 443 was the snekgame WebTransport server's; snek,
-# the blog, www and ppp now live on the schlift.com VM).
+# Global: HTTP/3 off (kept from when snekgame's WebTransport server had UDP 443;
+# snek, the blog, www and ppp now live on the schlift.com VM).
 #
 # Certificates come from Let's Encrypt over Cloudflare DNS (DNS-01) for every
 # site, so nothing needs ports 80/443 open to the internet.
@@ -66,28 +66,6 @@ monitor.{$DOMAIN} {
 		X-Content-Type-Options nosniff
 		X-Frame-Options DENY
 		X-Robots-Tag "noindex, nofollow, noarchive"
-	}
-}
-
-# snek's dev copy (~/snekgame), for trying UI changes on a phone before they
-# go to snek.brensch.com. Home network and WireGuard only. The game itself
-# runs over WebTransport on UDP 443, which snek-server serves directly with
-# this site's certificate (UFW allows it from the LAN and VPN only).
-snek-dev.{$DOMAIN} {
-	tls {
-		issuer acme {
-			dir https://acme-v02.api.letsencrypt.org/directory
-			dns cloudflare {env.CLOUDFLARE_API_TOKEN}
-			resolvers 1.1.1.1 8.8.8.8
-		}
-	}
-
-	@lan remote_ip 192.168.1.0/24 192.168.10.0/24 127.0.0.1 ::1
-	handle @lan {
-		reverse_proxy host.docker.internal:8097
-	}
-	handle {
-		respond "Local network access only" 403
 	}
 }
 
