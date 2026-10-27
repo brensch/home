@@ -273,6 +273,27 @@ views:
       name: Dock strainer
       icon: mdi:filter-outline
       hold_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.suckist_dock_reset_strainer_consumable}, confirmation: {text: "Reset the dock strainer timer?"}}
+    # AliExpress searches, cheapest first. The Qrevo S takes the same parts as the Qrevo Pro/Plus/MaxV (not the
+    # Curv, Edge or Slim), so the searches name those too; check a listing names the Qrevo S before buying.
+    - type: heading
+      heading: Buy parts
+      heading_style: subtitle
+    - type: markdown
+      grid_options: {columns: full}
+      content: >-
+        [Main brush](https://www.aliexpress.us/w/wholesale-roborock-qrevo-s-main-brush.html?SortType=price_asc) ·
+        [Side brush](https://www.aliexpress.us/w/wholesale-roborock-qrevo-s-side-brush.html?SortType=price_asc) ·
+        [Filter](https://www.aliexpress.us/w/wholesale-roborock-qrevo-s-hepa-filter.html?SortType=price_asc) ·
+        [Dust bags](https://www.aliexpress.us/w/wholesale-roborock-qrevo-s-dust-bag.html?SortType=price_asc) ·
+        [Mop pads](https://www.aliexpress.us/w/wholesale-roborock-qrevo-s-mop-pad.html?SortType=price_asc) ·
+        [Dock strainer](https://www.aliexpress.us/w/wholesale-roborock-qrevo-dock-strainer-filter.html?SortType=price_asc)
+
+
+        Usually cheaper per part, a whole kit (brush, side brushes, filters, bags, mop pads):
+        [AliExpress](https://www.aliexpress.us/w/wholesale-roborock-qrevo-s-accessory-kit.html?SortType=price_asc) ·
+        [Walmart](https://www.walmart.com/search?q=roborock+qrevo+s+accessory+kit&sort=price_low) ·
+        [Amazon](https://www.amazon.com/s?k=roborock+qrevo+s+accessory+kit&s=price-asc-rank)
+        (US kits run ~$15–26 shipped, often less than AliExpress once its shipping is added).
     - type: heading
       heading: History
       icon: mdi:chart-line
