@@ -297,6 +297,19 @@ template:
           event: "{{ trigger.payload_json.id }}"
           name: "{{ trigger.payload_json.name }}"
           score: "{{ trigger.payload_json.score }}"
+  # When the fridge last defrosted (its ~430 W heater, 10-20 min every 3-4 days; a compressor start's surge lasts
+  # seconds). The cooling cycle after a defrost runs hot for up to ~40 min, so the watchdog's quick 95 W rule skips it.
+  - triggers:
+      - trigger: numeric_state
+        entity_id: sensor.fridge_power
+        above: 300
+        for: 00:03:00
+    sensor:
+      - name: Fridge last defrost
+        unique_id: fridge_last_defrost
+        device_class: timestamp
+        icon: mdi:snowflake-melt
+        state: "{{ now().isoformat() }}"
   # Suckist (Roborock): how long since it last finished a clean (the robot's own record, so manual runs
   # count too), for the Vacuum page and auto-clean.
   - sensor:

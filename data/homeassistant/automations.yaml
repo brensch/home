@@ -213,6 +213,13 @@
     a post-defrost cycle stays above 95 W longer, 25-43 min. With the door open (2026-10-07 19:48, 3 h)
     it held 110 W flat, and on 2026-10-04 (11 h) 98 W flat, so sustained draw is the early signal:
     the old 4 h nonstop trigger fired 3 h after the door opened and an hour after we had noticed.
+    2026-10-21 (door open after a defrost) it held 105-112 W from 19:14 and the 95 W rule only fired at
+    20:29. Over 2026-10-08..26 (115 cycles, 4 defrosts) no healthy cycle stayed above 105 W for more than
+    5 min (post-defrost ones included), so 105 W for 20 min fires ~55 min sooner; the 430 W defrost heater
+    is excluded by the 200 W cap. That was the freezer door; a fridge door draws less (98 W on 10-04), and
+    outside the cycle after a defrost no healthy cycle stayed above 95 W for more than 11 min (post-defrost:
+    up to 40), so 95 W for 30 min, skipped for 3 h after a defrost (sensor.fridge_last_defrost), with the
+    75 min rule still covering those hours.
     Warn when it stops cycling, draws hard for too long, runs nonstop, or its plug is off or offline.'
   triggers:
   - trigger: numeric_state
@@ -221,6 +228,25 @@
     for: 03:00:00
     variables:
       problem: hasn't run its compressor in 3 hours. Is it warm inside?
+  - trigger: numeric_state
+    entity_id: sensor.fridge_power
+    above: 105
+    below: 200
+    for: 00:20:00
+    variables:
+      problem: >-
+        has been pulling {{ states('sensor.fridge_power') | round(0) | int }} W for 20 minutes.
+        A healthy cycle drops under 105 W within 5 minutes. Freezer door open?
+  - trigger: numeric_state
+    id: no_defrost
+    entity_id: sensor.fridge_power
+    above: 95
+    below: 200
+    for: 00:30:00
+    variables:
+      problem: >-
+        has been pulling {{ states('sensor.fridge_power') | round(0) | int }} W for 30 minutes.
+        A healthy cycle drops under 95 W within 15 minutes. Door open?
   - trigger: numeric_state
     entity_id: sensor.fridge_power
     above: 95
@@ -247,6 +273,11 @@
     for: 00:15:00
     variables:
       problem: plug has been offline for 15 minutes.
+  conditions:
+  - condition: template
+    value_template: >-
+      {{ trigger.id != 'no_defrost' or now() - as_datetime(states('sensor.fridge_last_defrost'), now() - timedelta(days=1))
+         > timedelta(hours=3) }}
   actions:
   - action: notify.send_message
     target:
