@@ -384,7 +384,7 @@
   mode: single
 - id: tv_lights
   alias: TV lights
-  description: Playing turns the kitchen off (always) and, after dark, dims the living room; finishing brings the living room back up.
+  description: Playing turns the Lines, Hektar and Brightboy off (always) and, after dark, dims the living room; finishing brings the living room back up.
   # media_player.tv_cast (Google Cast) reports playing/paused/buffering for
   # YouTube, Stremio and other Cast-based apps, including ones opened with the
   # remote. Seeking and skipping ads show as paused for 3-10 s, so pausing never
@@ -443,13 +443,14 @@
             entity_id: scene.living_room_dimmed
           data:
             transition: 2
-      # Kitchen off, every time. The Hue kitchen fades; the Lines just switch
-      # off, because HA's Nanoleaf integration turns a transition-off into
-      # "forget the brightness".
+      # Hektar and Brightboy off, every time (the numbered kitchen lights and
+      # the table light stay on). They fade; the Lines just switch off,
+      # because HA's Nanoleaf integration turns a transition-off into "forget
+      # the brightness".
       - action: light.turn_off
         target:
           entity_id:
-          - light.kitchen
+          - light.hektar
           - light.brightboy1
         data:
           transition: 5
