@@ -1,0 +1,3 @@
+# Already installed in this home's configuration.yaml.
+- platform: opf_status
+  session_file: /config/.storage/opf_status_session.json

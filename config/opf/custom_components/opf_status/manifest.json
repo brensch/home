@@ -1,0 +1,9 @@
+{
+  "domain": "opf_status",
+  "name": "OPF charger status (read only)",
+  "version": "0.1.0",
+  "documentation": "https://github.com/brensch/home/tree/main/config/opf",
+  "iot_class": "cloud_polling",
+  "requirements": [],
+  "codeowners": []
+}

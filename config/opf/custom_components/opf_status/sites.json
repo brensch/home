@@ -1,0 +1,83 @@
+[
+  {
+    "building_id": 51057,
+    "name": "Community Center",
+    "latitude": 37.4008,
+    "longitude": -122.098,
+    "chargers": [
+      {
+        "identifier": "1111118046",
+        "alias": "099101",
+        "connector": 1
+      },
+      {
+        "identifier": "1111118189",
+        "alias": "099102",
+        "connector": 1
+      },
+      {
+        "identifier": "1111117007",
+        "alias": "099103",
+        "connector": 1
+      },
+      {
+        "identifier": "1111118244",
+        "alias": "099104",
+        "connector": 1
+      },
+      {
+        "identifier": "1111118243",
+        "alias": "099105",
+        "connector": 1
+      },
+      {
+        "identifier": "1111117430",
+        "alias": "099106",
+        "connector": 1
+      },
+      {
+        "identifier": "1111117249",
+        "alias": "099107",
+        "connector": 1
+      },
+      {
+        "identifier": "1111117119",
+        "alias": "099108",
+        "connector": 1
+      },
+      {
+        "identifier": "1111118250",
+        "alias": "099109",
+        "connector": 1
+      }
+    ]
+  },
+  {
+    "building_id": 50447,
+    "name": "Aquatics Center",
+    "latitude": 37.4022,
+    "longitude": -122.097,
+    "chargers": [
+      {
+        "identifier": "A222605110055",
+        "alias": "990801",
+        "connector": 1
+      },
+      {
+        "identifier": "32604250201",
+        "alias": "990802",
+        "connector": 1
+      },
+      {
+        "identifier": "32604250440",
+        "alias": "990803",
+        "connector": 1
+      },
+      {
+        "identifier": "32604250677",
+        "alias": "990804",
+        "connector": 1
+      }
+    ]
+  }
+]

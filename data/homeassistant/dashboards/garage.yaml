@@ -85,10 +85,26 @@ views:
         entities: [device_tracker.schlesla_location]
         hours_to_show: 24
         grid_options: {columns: full, rows: 6}
+  # Nearby and home charging share one column, so desktop remains three sections across.
   # Home charging: sensor.schlesla_home_charging_energy (configuration.yaml), the car's charger power integrated
   # while it's parked at home, so it's in 10-minute steps.
   - type: grid
     cards:
+      - type: heading
+        heading: Free chargers nearby
+        icon: mdi:ev-station
+      - type: tile
+        entity: input_boolean.opf_watch
+        name: Watch for a charger · 30 sec
+        tap_action: {action: toggle}
+        icon_tap_action: {action: toggle}
+        grid_options: {columns: full}
+      - type: tile
+        entity: sensor.opf_community_center_free
+        name: Community Center
+      - type: tile
+        entity: sensor.opf_aquatics_center_free
+        name: Aquatics Center
       - type: heading
         heading: Charging at home
         icon: mdi:ev-station

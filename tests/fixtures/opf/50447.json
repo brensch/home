@@ -1,0 +1,30 @@
+[
+  {
+    "chargerIdentifier": "32604250677",
+    "connector": 1,
+    "status": "Available",
+    "connectorStr": "1",
+    "hasActiveRoamingSession": false
+  },
+  {
+    "chargerIdentifier": "32604250201",
+    "connector": 1,
+    "status": "Offline",
+    "connectorStr": "1",
+    "hasActiveRoamingSession": false
+  },
+  {
+    "chargerIdentifier": "A222605110055",
+    "connector": 1,
+    "status": "Charging",
+    "connectorStr": "1",
+    "hasActiveRoamingSession": false
+  },
+  {
+    "chargerIdentifier": "32604250440",
+    "connector": 1,
+    "status": "Charging",
+    "connectorStr": "1",
+    "hasActiveRoamingSession": false
+  }
+]

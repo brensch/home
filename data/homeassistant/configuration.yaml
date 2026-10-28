@@ -36,6 +36,8 @@ recorder:
     entity_globs:
       - image.*
     entities:
+      # OPF heartbeat updates every poll; actual charger transitions stay recorded.
+      - sensor.opf_last_checked
       - sensor.schrouter_cpu_temperature
       - sensor.schrouter_cpu_utilization
 
@@ -76,6 +78,10 @@ light:
 # report" automation. HA restores it after a restart, so on boot the gap
 # between it and now is how long the server (usually: the power) was out.
 input_datetime:
+  opf_left_work:
+    name: OPF commute started
+    has_date: true
+    has_time: true
   server_heartbeat:
     name: Server heartbeat
     has_date: true
@@ -179,6 +185,12 @@ lovelace:
 # On while movie mode has the living room dimmed; its pre-film look is saved on
 # the devices by light_memory (survives restarts, unlike scene.create).
 input_boolean:
+  opf_watch:
+    name: Watch for a charger
+    icon: mdi:ev-station
+  opf_commute_pending:
+    name: OPF arrival alert pending
+    icon: mdi:ev-station
   movie_dimmed:
     name: Movie mode has the living room dimmed
     icon: mdi:movie-open
@@ -213,6 +225,9 @@ input_select:
 # kWh the car has drawn charging at home, for the Garage page (not an Energy dashboard device: the car belongs on
 # Garage; on Energy its charging stays inside Untracked).
 sensor:
+  # OPF app's read-only site-status requests; refresh token is private runtime state.
+  - platform: opf_status
+    session_file: /config/.storage/opf_status_session.json
   - platform: integration
     name: Schlesla home charging energy
     unique_id: schlesla_home_charging_energy

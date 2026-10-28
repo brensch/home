@@ -965,3 +965,120 @@
       gps: "{{ [state_attr(zone, 'latitude'), state_attr(zone, 'longitude')] }}"
       gps_accuracy: 0
   mode: queued
+- id: opf_arm_commute
+  alias: OPF · watch chargers after work
+  description: Arm Brendan's arrival alert after a work visit of at least 30 minutes. Helpers survive restarts.
+  triggers:
+    - trigger: zone
+      entity_id: person.brend
+      zone: zone.work
+      event: leave
+  conditions:
+    - condition: template
+      value_template: >-
+        {{ trigger.from_state is not none and
+           now() - trigger.from_state.last_changed >= timedelta(minutes=30) }}
+  actions:
+    - action: input_datetime.set_datetime
+      target:
+        entity_id: input_datetime.opf_left_work
+      data:
+        timestamp: "{{ now().timestamp() }}"
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.opf_commute_pending
+  mode: single
+- id: opf_notify_approaching_home
+  alias: OPF · Rengstorff availability approaching home
+  description: Once per commute, within 2 km of home and 4 hours of leaving work. Unknown availability is explicit.
+  triggers:
+    - trigger: template
+      value_template: >-
+        {{ is_state('input_boolean.opf_commute_pending', 'on')
+           and 0 <= now().timestamp() - as_timestamp(states('input_datetime.opf_left_work'), 0) < 14400
+           and has_value('person.brend')
+           and state_attr('person.brend', 'latitude') is number
+           and state_attr('person.brend', 'longitude') is number
+           and distance('person.brend', 'zone.home') is number
+           and distance('person.brend', 'zone.home') < 2 }}
+  actions:
+    - action: notify.mobile_app_schlixel
+      data:
+        title: Rengstorff charging
+        message: >-
+          {% for site, eid in [('Community Center', 'sensor.opf_community_center_free'),
+                                ('Aquatics Center', 'sensor.opf_aquatics_center_free')] %}
+            {% set checked = as_timestamp(states('sensor.opf_last_checked'), 0) %}
+            {% if has_value(eid) and 0 <= now().timestamp() - checked < 300 %}
+              {{ site }}: {{ states(eid) }} of {{ state_attr(eid, 'total') }} free{% if states(eid) | int(0) > 0 %}
+              ({{ state_attr(eid, 'available_chargers') | join(', ') }}){% endif %}.
+            {% else %}
+              {{ site }}: availability unknown; check OPF.
+            {% endif %}
+          {% endfor %}
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.opf_commute_pending
+  mode: single
+- id: opf_clear_old_commute
+  alias: OPF · clear old commute
+  triggers:
+    - trigger: zone
+      entity_id: person.brend
+      zone: zone.work
+      event: enter
+    - trigger: template
+      value_template: >-
+        {{ is_state('input_boolean.opf_commute_pending', 'on') and
+           now().timestamp() - as_timestamp(states('input_datetime.opf_left_work'), 0) >= 14400 }}
+  actions:
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.opf_commute_pending
+  mode: single
+- id: opf_watch_new_availability
+  alias: OPF · a charger became available
+  description: While watching, tell Brendan and Alyssa when a previously occupied connector becomes free at either site.
+  triggers:
+    - trigger: state
+      entity_id:
+        - sensor.opf_community_center_free
+        - sensor.opf_aquatics_center_free
+  variables:
+    newly_free: >-
+      {% if trigger is defined and trigger.from_state is not none and trigger.to_state is not none %}
+        {{ trigger.to_state.attributes.get('available_chargers', [])
+           | reject('in', trigger.from_state.attributes.get('available_chargers', [])) | list }}
+      {% else %}{{ [] }}{% endif %}
+    site_name: >-
+      {{ 'Community Center' if trigger is defined and trigger.entity_id == 'sensor.opf_community_center_free'
+         else 'Aquatics Center' }}
+  conditions:
+    - condition: state
+      entity_id: input_boolean.opf_watch
+      state: 'on'
+    - condition: template
+      value_template: >-
+        {{ trigger.from_state is not none and trigger.to_state is not none
+           and is_number(trigger.from_state.state) and is_number(trigger.to_state.state)
+           and newly_free | length > 0 }}
+  actions:
+    - variables:
+        message: >-
+          {{ site_name }}: {{ newly_free | length }} charger{{ 's' if newly_free | length != 1 else '' }}
+          just became free ({{ newly_free | join(', ') }}).
+          {{ trigger.to_state.state }} of {{ trigger.to_state.attributes.total }} now available.
+    - action: notify.mobile_app_schlixel
+      continue_on_error: true
+      data:
+        title: Rengstorff charger available
+        message: "{{ message }}"
+    - action: notify.send_message
+      continue_on_error: true
+      target:
+        entity_id: notify.alyssas_iphone
+      data:
+        title: Rengstorff charger available
+        message: "{{ message }}"
+  mode: queued
+  max: 10

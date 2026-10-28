@@ -1,0 +1,65 @@
+[
+  {
+    "chargerIdentifier": "1111118243",
+    "connector": 1,
+    "status": "Charging",
+    "connectorStr": "1",
+    "hasActiveRoamingSession": false
+  },
+  {
+    "chargerIdentifier": "1111117430",
+    "connector": 1,
+    "status": "Charging",
+    "connectorStr": "1",
+    "hasActiveRoamingSession": false
+  },
+  {
+    "chargerIdentifier": "1111118046",
+    "connector": 1,
+    "status": "Charging",
+    "connectorStr": "1",
+    "hasActiveRoamingSession": false
+  },
+  {
+    "chargerIdentifier": "1111118189",
+    "connector": 1,
+    "status": "Available",
+    "connectorStr": "1",
+    "hasActiveRoamingSession": false
+  },
+  {
+    "chargerIdentifier": "1111118244",
+    "connector": 1,
+    "status": "Charging",
+    "connectorStr": "1",
+    "hasActiveRoamingSession": false
+  },
+  {
+    "chargerIdentifier": "1111118250",
+    "connector": 1,
+    "status": "Available",
+    "connectorStr": "1",
+    "hasActiveRoamingSession": false
+  },
+  {
+    "chargerIdentifier": "1111117007",
+    "connector": 1,
+    "status": "Charging",
+    "connectorStr": "1",
+    "hasActiveRoamingSession": false
+  },
+  {
+    "chargerIdentifier": "1111117249",
+    "connector": 1,
+    "status": "Charging",
+    "connectorStr": "1",
+    "hasActiveRoamingSession": false
+  },
+  {
+    "chargerIdentifier": "1111117119",
+    "connector": 1,
+    "status": "Charging",
+    "connectorStr": "1",
+    "hasActiveRoamingSession": false
+  }
+]
