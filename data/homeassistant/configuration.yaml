@@ -78,10 +78,6 @@ light:
 # report" automation. HA restores it after a restart, so on boot the gap
 # between it and now is how long the server (usually: the power) was out.
 input_datetime:
-  opf_left_work:
-    name: OPF commute started
-    has_date: true
-    has_time: true
   server_heartbeat:
     name: Server heartbeat
     has_date: true
@@ -188,8 +184,8 @@ input_boolean:
   opf_watch:
     name: Watch for a charger
     icon: mdi:ev-station
-  opf_commute_pending:
-    name: OPF arrival alert pending
+  opf_arrival_armed:
+    name: OPF arrival alert armed
     icon: mdi:ev-station
   movie_dimmed:
     name: Movie mode has the living room dimmed

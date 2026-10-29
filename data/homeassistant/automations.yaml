@@ -840,32 +840,6 @@
         Left work{{ (', home in about ' ~ (minutes | trim) ~ ' min' ~ ('' if traffic else ' (no traffic info)'))
         if (minutes | trim | int(0)) else '' }}.
   mode: single
-- id: schlesla_plug_in
-  alias: Schlesla plug-in reminder
-  description: >-
-    At 9 pm, if the Tesla is parked at home under 50% and not plugged in, tells Brendan. Readings can be up to 10
-    minutes old (the car is polled every 10 minutes and not woken).
-  triggers:
-  - trigger: time
-    at: "21:00:00"
-  conditions:
-  - condition: state
-    entity_id: device_tracker.schlesla_location
-    state: home
-  - condition: numeric_state
-    entity_id: sensor.schlesla_battery_level
-    below: 50
-  - condition: state
-    entity_id: binary_sensor.schlesla_charge_cable
-    state: "off"
-  actions:
-  - action: notify.mobile_app_schlixel
-    data:
-      title: Plug in the car
-      message: >-
-        Schlesla is at {{ states('sensor.schlesla_battery_level') }}%
-        ({{ states('sensor.schlesla_battery_range') | float(0) | round(0) | int }} km) and isn't plugged in.
-  mode: single
 - id: schlesla_left_open
   alias: Schlesla left open
   description: >-
@@ -965,43 +939,39 @@
       gps: "{{ [state_attr(zone, 'latitude'), state_attr(zone, 'longitude')] }}"
       gps_accuracy: 0
   mode: queued
-- id: opf_arm_commute
-  alias: OPF · watch chargers after work
-  description: Arm Brendan's arrival alert after a work visit of at least 30 minutes. Helpers survive restarts.
-  triggers:
-    - trigger: zone
-      entity_id: person.brend
-      zone: zone.work
-      event: leave
-  conditions:
-    - condition: template
-      value_template: >-
-        {{ trigger.from_state is not none and
-           now() - trigger.from_state.last_changed >= timedelta(minutes=30) }}
-  actions:
-    - action: input_datetime.set_datetime
-      target:
-        entity_id: input_datetime.opf_left_work
-      data:
-        timestamp: "{{ now().timestamp() }}"
-    - action: input_boolean.turn_on
-      target:
-        entity_id: input_boolean.opf_commute_pending
-  mode: single
-- id: opf_notify_approaching_home
-  alias: OPF · Rengstorff availability approaching home
-  description: Once per commute, within 2 km of home and 4 hours of leaving work. Unknown availability is explicit.
+- id: opf_arm_arrival
+  alias: OPF · arm the approaching-home alert
+  description: Arms Brendan's approaching-home charger alert whenever he is more than 3 km from home (helper survives restarts).
   triggers:
     - trigger: template
       value_template: >-
-        {{ is_state('input_boolean.opf_commute_pending', 'on')
-           and 0 <= now().timestamp() - as_timestamp(states('input_datetime.opf_left_work'), 0) < 14400
+        {{ distance('person.brend', 'zone.home') is number
+           and distance('person.brend', 'zone.home') > 3 }}
+  actions:
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.opf_arrival_armed
+  mode: single
+- id: opf_notify_approaching_home
+  alias: OPF · Rengstorff availability approaching home
+  description: >-
+    Whenever Brendan comes back within 2 km of home after being more than 3 km away, once per approach, only if
+    Schlesla is under 30% (or its battery reading is unknown). Unknown availability is explicit.
+  triggers:
+    - trigger: template
+      value_template: >-
+        {{ is_state('input_boolean.opf_arrival_armed', 'on')
            and has_value('person.brend')
            and state_attr('person.brend', 'latitude') is number
            and state_attr('person.brend', 'longitude') is number
            and distance('person.brend', 'zone.home') is number
            and distance('person.brend', 'zone.home') < 2 }}
   actions:
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.opf_arrival_armed
+    - condition: template
+      value_template: "{{ states('sensor.schlesla_battery_level') | float(0) < 30 or not has_value('sensor.schlesla_battery_level') }}"
     - action: notify.mobile_app_schlixel
       data:
         title: Rengstorff charging
@@ -1016,25 +986,6 @@
               {{ site }}: availability unknown; check OPF.
             {% endif %}
           {% endfor %}
-    - action: input_boolean.turn_off
-      target:
-        entity_id: input_boolean.opf_commute_pending
-  mode: single
-- id: opf_clear_old_commute
-  alias: OPF · clear old commute
-  triggers:
-    - trigger: zone
-      entity_id: person.brend
-      zone: zone.work
-      event: enter
-    - trigger: template
-      value_template: >-
-        {{ is_state('input_boolean.opf_commute_pending', 'on') and
-           now().timestamp() - as_timestamp(states('input_datetime.opf_left_work'), 0) >= 14400 }}
-  actions:
-    - action: input_boolean.turn_off
-      target:
-        entity_id: input_boolean.opf_commute_pending
   mode: single
 - id: opf_watch_new_availability
   alias: OPF · a charger became available

@@ -32,12 +32,13 @@ page. No third-party client can promise how a provider will classify access.
   unchanged availability and recovery from unknown/unavailable do not alert.
   The toggle stays on until turned off, restores across HA restarts, and
   returns to 120-second polling when off. Error backoff and access stops still
-  take precedence over watch mode. This watch is independent of the commute alert.
-- Brendan's commute alert arms after a work visit of at least 30 minutes.
-  Within four hours, when his phone reports him within **2 km of home**, it
-  sends **one Schlixel push notification** with both counts and free aliases.
-  Persistent helpers keep an armed commute across HA restarts. Returning to
-  work or exceeding four hours clears it. The home uses metric units, so
+  take precedence over watch mode. This watch is independent of the approaching-home alert.
+- Brendan's approaching-home alert arms whenever his phone puts him more than
+  **3 km from home**, from anywhere. When he next comes within **2 km of home**
+  it disarms and, if Schlesla is under **30%** (or its battery reading is
+  unknown), sends **one Schlixel push notification** with both counts and free
+  aliases. The 1 km gap keeps GPS jitter at the edge from re-firing it. The
+  armed helper survives HA restarts. The home uses metric units, so
   HA's `distance()` returns km. A phone location update is required; sparse
   GPS can delay the message until arrival.
 - Data older than five minutes, unknown states or failed requests produce an
@@ -141,11 +142,11 @@ docker exec homeassistant python -m homeassistant --script check_config --config
 Ten protocol tests use captured live response fixtures, including watch-mode
 timing and preserving backoff across toggle changes. Isolated watch tests
 exercise availability transitions and capture both notification actions locally
-without sending phone pushes. Eight isolated HA
-template checks cover near/far, commute expiry/disarming, missing GPS, fresh
-availability, stale data and unavailable sensors. Live authentication, token
+without sending phone pushes. Twelve isolated HA
+template checks cover near/far, arming beyond 3 km, disarming, missing GPS, the
+30% battery gate, fresh availability, stale data and unavailable sensors. Live authentication, token
 refresh, map lookup, site details and the installed HA sensors were verified.
-A physical commute and actual phone push delivery are not simulated by these
+A physical drive home and actual phone push delivery are not simulated by these
 tests. Heartbeat timestamps are excluded from Recorder; charger state changes
 and free counts retain normal history.
 
