@@ -142,3 +142,33 @@ router.{$DOMAIN} {
     }
     header X-Robots-Tag "noindex, nofollow, noarchive"
 }
+
+# The iMessage homeserver (~/imassage, its own repository and compose project). Synapse joins
+# home_default as imessage-synapse; nothing is published on a host port. Home network and
+# WireGuard only, like monitor/router: it holds every bridged message.
+matrix.{$DOMAIN} {
+	tls {
+		issuer acme {
+			dir https://acme-v02.api.letsencrypt.org/directory
+			dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+			resolvers 1.1.1.1 8.8.8.8
+		}
+	}
+
+	@lan remote_ip 192.168.1.0/24 192.168.10.0/24 127.0.0.1 ::1
+	handle @lan {
+		reverse_proxy imessage-synapse:8008 {
+			transport http {
+				compression off
+			}
+		}
+	}
+	handle {
+		respond "Local network access only" 403
+	}
+	header {
+		Referrer-Policy no-referrer
+		X-Content-Type-Options nosniff
+		X-Robots-Tag "noindex, nofollow, noarchive"
+	}
+}
