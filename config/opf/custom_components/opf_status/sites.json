@@ -48,7 +48,8 @@
       {
         "identifier": "1111118250",
         "alias": "099109",
-        "connector": 1
+        "connector": 1,
+        "accessible": true
       }
     ]
   },

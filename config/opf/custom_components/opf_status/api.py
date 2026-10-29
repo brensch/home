@@ -40,9 +40,15 @@ def snapshot(rows, site):
         states[key] = normalized if normalized in KNOWN else "UNKNOWN"
     if states.keys() != expected.keys():
         raise ValueError("Incomplete OPF site snapshot")
-    aliases = sorted(expected[k]["alias"] for k, v in states.items() if v == "AVAILABLE")
-    return {"states": states, "free": len(aliases) if "UNKNOWN" not in states.values() else None,
-            "total": len(expected), "available_aliases": aliases,
+    # Accessibility-designated bays are counted in their own group, never as ordinary free bays.
+    groups = {}
+    for accessible in (False, True):
+        keys = [k for k, c in expected.items() if bool(c.get("accessible")) == accessible]
+        aliases = sorted(expected[k]["alias"] for k in keys if states[k] == "AVAILABLE")
+        known = all(states[k] != "UNKNOWN" for k in keys)
+        groups[accessible] = {"free": len(aliases) if known else None, "total": len(keys),
+                              "available_aliases": aliases}
+    return {"states": states, **groups[False], "accessible": groups[True],
             "checked_at": datetime.now(timezone.utc).isoformat()}
 
 

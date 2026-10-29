@@ -12,10 +12,15 @@ page. No third-party client can promise how a provider will classify access.
 
 - Community Center, site **51057**: 9 chargers, aliases **099101–099109**.
 - Aquatics Center, site **50447**: 4 chargers, aliases **990801–990804**.
-- One bay is accessibility-designated, per the user. Its charger alias and
-  exclusion preference have not been confirmed, so it remains in these counts.
+- **099109** (Community Center) is the accessibility-designated bay, marked
+  `"accessible": true` in `sites.json` (2026-10-28, per the user). It is left
+  out of every ordinary count, total and alert, so Community Center counts
+  **8**. It is tracked on its own: `sensor.opf_099109` (status) and
+  `sensor.opf_accessible_free` (free count, every site's accessible bays, with
+  the same `total` / `available_chargers` attributes and long-term statistics).
 - Thirteen status sensors, two site free-count sensors, one combined count,
-  and one last-checked timestamp. All thirteen are Type 1 / J1772 connectors.
+  one accessible count and one last-checked timestamp. All thirteen are
+  Type 1 / J1772 connectors.
 - Garage dashboard shows just two compact free-count tiles, one per location.
   Counts have numeric measurement metadata, unit `chargers`, and integer
   display precision, so HA plots numeric history rather than categorical states.
@@ -40,7 +45,8 @@ page. No third-party client can promise how a provider will classify access.
   faulted and reserved connectors are never counted free. `AVAILABLE` alone
   counts as free; parking-bay obstruction is not reported by this API.
 
-At initial verification, Community Center had 2/9 available (099102, 099109),
+At initial verification, Community Center had 2/9 available (099102, 099109;
+1/8 now that 099109 is counted separately),
 Aquatics Center 1/4 (990804), with 990802 offline. These are historical test
 observations, not promises of present availability.
 

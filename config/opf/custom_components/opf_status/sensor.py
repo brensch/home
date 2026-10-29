@@ -81,6 +81,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     if not client.stopped:
         set_interval()
     entities = [CountSensor(coordinator, site) for site in sites] + [CountSensor(coordinator, None)]
+    entities += [CountSensor(coordinator, None, accessible=True)]
     entities += [LastCheckedSensor(coordinator)]
     entities += [ChargerSensor(coordinator, site, charger) for site in sites for charger in site["chargers"]]
     async_add_entities(entities)
@@ -112,9 +113,13 @@ class CountSensor(CoordinatorEntity, SensorEntity):
     _attr_native_unit_of_measurement = "chargers"
     _attr_suggested_display_precision = 0
 
-    def __init__(self, coordinator, site):
+    def __init__(self, coordinator, site, accessible=False):
         super().__init__(coordinator)
-        self.site = site
+        self.site, self.accessible = site, accessible
+        if accessible:
+            # Every site's accessibility-designated bays, kept out of the ordinary counts.
+            self._attr_name, self._attr_unique_id = "OPF accessible free", "opf_accessible_free"
+            return
         key = str(site["building_id"]) if site else "all"
         name = site["name"] if site else "Rengstorff"
         self._attr_name = f"OPF {name} free"
@@ -122,7 +127,8 @@ class CountSensor(CoordinatorEntity, SensorEntity):
 
     def snapshots(self):
         data = self.coordinator.data or {}
-        return [data.get(self.site["building_id"], {})] if self.site else list(data.values())
+        data = [data.get(self.site["building_id"], {})] if self.site else list(data.values())
+        return [d.get("accessible", {}) for d in data] if self.accessible else data
 
     @property
     def native_value(self):

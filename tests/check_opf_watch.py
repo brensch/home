@@ -29,7 +29,7 @@ async def main():
         entity = f'sensor.opf_{"community_center" if site == "community" else "aquatics_center"}_free'
         trigger = {'entity_id': entity,
                    'from_state': State(entity, before, {'available_chargers': old_aliases}),
-                   'to_state': State(entity, after, {'available_chargers': new_aliases, 'total': 9 if site == 'community' else 4})}
+                   'to_state': State(entity, after, {'available_chargers': new_aliases, 'total': 8 if site == 'community' else 4})}
         values = {'trigger': trigger}
         for name, text in automation['variables'].items():
             values[name] = Template(text, hass).async_render(values)

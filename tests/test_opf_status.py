@@ -47,12 +47,22 @@ def client(session):
 
 class Tests(unittest.IsolatedAsyncioTestCase):
     def test_real_sites_and_alias_resolution(self):
-        for site, free, total in zip(SITES, (2,1), (9,4)):
+        for site, free, total in zip(SITES, (1,1), (8,4)):
             data=api.snapshot(FIXTURES[site['building_id']],site)
             self.assertEqual((data['free'],data['total']), (free,total))
         self.assertIn('099102',api.snapshot(FIXTURES[51057],SITES[0])['available_aliases'])
         target=next(c for c in SITES[0]['chargers'] if c['alias']=='099102')
         self.assertEqual(target['identifier'],'1111118189')
+
+    def test_accessible_bay_is_its_own_group(self):
+        data=api.snapshot(FIXTURES[51057],SITES[0])
+        self.assertNotIn('099109',data['available_aliases'])
+        self.assertEqual(data['accessible'],{'free':1,'total':1,'available_aliases':['099109']})
+        self.assertEqual(len(data['states']),9)
+        self.assertEqual(api.snapshot(FIXTURES[50447],SITES[1])['accessible'],{'free':0,'total':0,'available_aliases':[]})
+        rows=[dict(d,status='NewState') if d['chargerIdentifier']=='1111118250' else d for d in FIXTURES[51057]]
+        data=api.snapshot(rows,SITES[0])
+        self.assertEqual((data['free'],data['accessible']['free']),(1,None))
 
     def test_unknown_missing_and_duplicate_fail_closed(self):
         site=SITES[0]
@@ -66,7 +76,7 @@ class Tests(unittest.IsolatedAsyncioTestCase):
         session=Session(*(Response(FIXTURES[s['building_id']]) for s in SITES))
         instance=client(session)
         result=await instance.poll()
-        self.assertEqual(sum(s['free'] for s in result.values()),3)
+        self.assertEqual(sum(s['free'] for s in result.values()),2)
         self.assertEqual(await instance.poll(),result)
         self.assertEqual(len(session.calls),2)
         for url,kwargs in session.calls:
